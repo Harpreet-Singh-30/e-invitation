@@ -124,8 +124,17 @@ router.post('/signup', async (req: Request, res: Response, next: NextFunction) =
     // await sendVerificationEmail(user.email, verificationToken);
 
     // Generate tokens
-    const accessToken = generateAccessToken(user.id, user.role);
-    const refreshToken = generateRefreshToken(user.id);
+    const accessToken = generateAccessToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      subscriptionTier: user.subscriptionTier,
+    });
+    const refreshToken = generateRefreshToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
 
     // Save refresh token to database
     await prisma.user.update({
@@ -185,8 +194,17 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     }
 
     // Generate tokens
-    const accessToken = generateAccessToken(user.id, user.role);
-    const refreshToken = generateRefreshToken(user.id);
+    const accessToken = generateAccessToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      subscriptionTier: user.subscriptionTier,
+    });
+    const refreshToken = generateRefreshToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
 
     // Save refresh token
     await prisma.user.update({
@@ -247,7 +265,12 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
     }
 
     // Generate new access token
-    const accessToken = generateAccessToken(user.id, user.role);
+    const accessToken = generateAccessToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      subscriptionTier: user.subscriptionTier,
+    });
 
     res.json({
       message: 'Token refreshed successfully',
