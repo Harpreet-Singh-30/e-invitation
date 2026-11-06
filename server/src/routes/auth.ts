@@ -108,10 +108,7 @@ router.post('/signup', async (req: Request, res: Response, next: NextFunction) =
     // Hash password
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Generate email verification token
-    const emailVerificationToken = generateEmailVerificationToken(email);
-
-    // Create user
+    // Create user (email verification disabled in dev mode)
     const user = await prisma.user.create({
       data: {
         email: email.toLowerCase(),
@@ -119,14 +116,12 @@ router.post('/signup', async (req: Request, res: Response, next: NextFunction) =
         name,
         role: 'host', // Default role
         subscriptionTier: 'free', // Default tier
-        emailVerified: false, // Require email verification
-        emailVerificationToken,
-        emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        emailVerified: process.env.NODE_ENV === 'development' ? true : false, // Auto-verify in dev
       },
     });
 
     // TODO: Send verification email (implement email service)
-    // await sendVerificationEmail(user.email, emailVerificationToken);
+    // await sendVerificationEmail(user.email, verificationToken);
 
     // Generate tokens
     const accessToken = generateAccessToken(user.id, user.role);
@@ -139,14 +134,12 @@ router.post('/signup', async (req: Request, res: Response, next: NextFunction) =
     });
 
     res.status(201).json({
-      message: 'Account created successfully. Please verify your email.',
+      message: process.env.NODE_ENV === 'development' 
+        ? 'Account created successfully (email auto-verified in dev mode)'
+        : 'Account created successfully. Please verify your email.',
       user: formatUserResponse(user),
       accessToken,
       refreshToken,
-      // Include verification token in dev mode for testing
-      ...(process.env.NODE_ENV === 'development' && {
-        _dev_verificationToken: emailVerificationToken,
-      }),
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -332,37 +325,31 @@ router.post('/verify-email', async (req: Request, res: Response, next: NextFunct
       });
     }
 
-    // Find user with matching token
-    const user = await prisma.user.findFirst({
+    // Find user by email from token
+    const user = await prisma.user.findUnique({
       where: {
         email: payload.email,
-        emailVerificationToken: token,
-        emailVerificationExpires: {
-          gt: new Date(),
-        },
       },
     });
 
     if (!user) {
       return res.status(400).json({
         error: 'Invalid token',
-        message: 'Verification token is invalid or expired.',
+        message: 'User not found.',
       });
     }
 
     // Mark email as verified
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
         emailVerified: true,
-        emailVerificationToken: null,
-        emailVerificationExpires: null,
       },
     });
 
     res.json({
       message: 'Email verified successfully',
-      user: formatUserResponse(user),
+      user: formatUserResponse(updatedUser),
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -400,14 +387,8 @@ router.post('/forgot-password', async (req: Request, res: Response, next: NextFu
     // Generate reset token
     const resetToken = generatePasswordResetToken(user.email);
 
-    // Save reset token to database
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordResetToken: resetToken,
-        passwordResetExpires: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
-      },
-    });
+    // TODO: Save reset token to separate table or cache (Redis)
+    // For now, just generate it - in production you'd store the hash
 
     // TODO: Send password reset email
     // await sendPasswordResetEmail(user.email, resetToken);
@@ -417,6 +398,7 @@ router.post('/forgot-password', async (req: Request, res: Response, next: NextFu
       // Include reset token in dev mode for testing
       ...(process.env.NODE_ENV === 'development' && {
         _dev_resetToken: resetToken,
+        _dev_userId: user.id,
       }),
     });
   } catch (error) {
@@ -450,34 +432,28 @@ router.post('/reset-password', async (req: Request, res: Response, next: NextFun
       });
     }
 
-    // Find user with matching token
-    const user = await prisma.user.findFirst({
+    // Find user by email from token
+    const user = await prisma.user.findUnique({
       where: {
         email: payload.email,
-        passwordResetToken: token,
-        passwordResetExpires: {
-          gt: new Date(),
-        },
       },
     });
 
     if (!user) {
       return res.status(400).json({
         error: 'Invalid token',
-        message: 'Password reset token is invalid or expired.',
+        message: 'User not found.',
       });
     }
 
     // Hash new password
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Update password and clear reset token
+    // Update password and clear refresh token (invalidate all sessions)
     await prisma.user.update({
       where: { id: user.id },
       data: {
         passwordHash,
-        passwordResetToken: null,
-        passwordResetExpires: null,
         refreshToken: null, // Invalidate all sessions
       },
     });
