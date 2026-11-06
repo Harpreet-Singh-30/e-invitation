@@ -258,6 +258,7 @@ JWT_REFRESH_EXPIRY="7d"
 
 ---
 
-**Status:** 🟡 PAUSED - Waiting for PostgreSQL installation  
-**Next Action:** Install PostgreSQL (requires sudo)  
-**Expected Resume:** After database installation complete
+**Status:** 🟢 READY TO EXECUTE - PostgreSQL detected, all scripts prepared  
+**Next Action:** Run database creation (ONE COMMAND - see READY_TO_EXECUTE.md)  
+**Command:** `sudo -u postgres psql -f scripts/create-database.sql && bash scripts/post-db-setup.sh`  
+**Time:** ~3 minutes automated setup
