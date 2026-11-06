@@ -78,7 +78,7 @@ function formatUserResponse(user: any) {
     name: user.name,
     role: user.role,
     subscriptionTier: user.subscriptionTier,
-    isEmailVerified: user.isEmailVerified,
+    emailVerified: user.emailVerified,
     createdAt: user.createdAt,
   };
 }
@@ -119,7 +119,7 @@ router.post('/signup', async (req: Request, res: Response, next: NextFunction) =
         name,
         role: 'host', // Default role
         subscriptionTier: 'free', // Default tier
-        isEmailVerified: false, // Require email verification
+        emailVerified: false, // Require email verification
         emailVerificationToken,
         emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
       },
@@ -200,7 +200,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
       where: { id: user.id },
       data: {
         refreshToken,
-        lastLogin: new Date(),
+        lastLoginAt: new Date(),
       },
     });
 
@@ -354,7 +354,7 @@ router.post('/verify-email', async (req: Request, res: Response, next: NextFunct
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        isEmailVerified: true,
+        emailVerified: true,
         emailVerificationToken: null,
         emailVerificationExpires: null,
       },

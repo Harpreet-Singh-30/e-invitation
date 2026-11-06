@@ -5,185 +5,277 @@ import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
-import { initializeDatabase, seedDatabase } from './db';
-import { getSiteBySlug, generateOGTags, renderHTMLWithOGTags, renderAppHTML } from './services/render';
-import { OrderService } from './services/orders';
+import { prisma } from './lib/prisma';
 
 // Import routes
-import publicRoutes from './routes/public';
-import editRoutes from './routes/edit';
-import adminRoutes from './routes/admin';
+import authRoutes from './routes/auth';
+// TODO: Import other routes as we build them
+// import invitationRoutes from './routes/invitations';
+// import guestRoutes from './routes/guests';
+// import themeRoutes from './routes/themes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BASE_DOMAIN = process.env.BASE_DOMAIN || 'localhost';
-const UPLOADS_PATH = process.env.UPLOADS_PATH || path.join(__dirname, '../data/uploads');
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
 
-// Initialize database
-try {
-  initializeDatabase();
-  seedDatabase();
-  console.log('✓ Database initialized');
-} catch (error) {
-  console.error('Database initialization failed:', error);
-  process.exit(1);
+// ============================================================================
+// DATABASE CONNECTION TEST
+// ============================================================================
+
+async function testDatabaseConnection() {
+  try {
+    await prisma.$connect();
+    console.log('✅ Database connected successfully');
+  } catch (error) {
+    console.error('❌ Database connection failed:', error);
+    process.exit(1);
+  }
 }
 
-// Security middleware
-app.use(helmet({
-  contentSecurityPolicy: false, // Disable for now, configure properly in production
-  crossOriginEmbedderPolicy: false
-}));
+testDatabaseConnection();
 
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
-  credentials: true
-}));
+// ============================================================================
+// SECURITY MIDDLEWARE
+// ============================================================================
 
-// Body parsing
+app.use(
+  helmet({
+    contentSecurityPolicy: NODE_ENV === 'production' ? undefined : false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
+app.use(
+  cors({
+    origin: CORS_ORIGIN,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+
+// ============================================================================
+// BODY PARSING
+// ============================================================================
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Rate limiting
+// ============================================================================
+// RATE LIMITING
+// ============================================================================
+
+// General API rate limiter
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  max: 100, // 100 requests per windowMs
+  message: { error: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
-const orderLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10, // 10 orders per hour
-  message: 'Too many orders from this IP, please try again later.'
+// Strict rate limiter for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 requests per windowMs
+  message: { error: 'Too many authentication attempts, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Don't count successful requests
 });
 
-// Serve uploads
-app.use('/uploads', express.static(UPLOADS_PATH, {
-  maxAge: '365d',
-  immutable: true
-}));
+// ============================================================================
+// FILE UPLOADS
+// ============================================================================
 
-// Health check
-app.get('/healthz', (req: Request, res: Response) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+const UPLOADS_PATH = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
 
-// API routes with rate limiting
-app.use('/api', apiLimiter, publicRoutes);
-app.post('/api/orders', orderLimiter, publicRoutes);
-app.use('/api/edit', editRoutes);
-app.use('/admin', adminRoutes);
-
-// Static assets from web build (will be created by React)
-const WEB_BUILD_PATH = path.join(__dirname, '../../web/dist');
-
-if (fs.existsSync(WEB_BUILD_PATH)) {
-  app.use('/assets', express.static(path.join(WEB_BUILD_PATH, 'assets'), {
-    maxAge: '365d',
-    immutable: true
-  }));
+// Create uploads directory if it doesn't exist
+if (!fs.existsSync(UPLOADS_PATH)) {
+  fs.mkdirSync(UPLOADS_PATH, { recursive: true });
+  console.log('✅ Uploads directory created');
 }
 
-// Subdomain routing and site rendering
-app.get('*', async (req: Request, res: Response) => {
+// Serve uploads
+app.use(
+  '/uploads',
+  express.static(UPLOADS_PATH, {
+    maxAge: NODE_ENV === 'production' ? '365d' : 0,
+    immutable: NODE_ENV === 'production',
+  })
+);
+
+// ============================================================================
+// HEALTH CHECK
+// ============================================================================
+
+app.get('/healthz', async (req: Request, res: Response) => {
   try {
-    const host = req.hostname;
-    const subdomain = extractSubdomain(host, BASE_DOMAIN);
+    // Check database connection
+    await prisma.$queryRaw`SELECT 1`;
     
-    // Load HTML shell
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: NODE_ENV,
+      database: 'connected',
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      environment: NODE_ENV,
+      database: 'disconnected',
+    });
+  }
+});
+
+// ============================================================================
+// API ROUTES
+// ============================================================================
+
+// Authentication routes (with strict rate limiting)
+app.use('/api/auth', authLimiter, authRoutes);
+
+// TODO: Add other routes as we build them
+// app.use('/api/invitations', apiLimiter, invitationRoutes);
+// app.use('/api/guests', apiLimiter, guestRoutes);
+// app.use('/api/themes', apiLimiter, themeRoutes);
+
+// Catch-all for undefined API routes
+app.use('/api/*', (req: Request, res: Response) => {
+  res.status(404).json({
+    error: 'Not found',
+    message: `API endpoint ${req.method} ${req.path} not found`,
+  });
+});
+
+// ============================================================================
+// FRONTEND SERVING (SPA)
+// ============================================================================
+
+const WEB_BUILD_PATH = path.join(__dirname, '../../web/dist');
+
+// Serve static assets
+if (fs.existsSync(WEB_BUILD_PATH)) {
+  app.use(
+    '/assets',
+    express.static(path.join(WEB_BUILD_PATH, 'assets'), {
+      maxAge: NODE_ENV === 'production' ? '365d' : 0,
+      immutable: NODE_ENV === 'production',
+    })
+  );
+
+  // Serve index.html for all non-API routes (SPA)
+  app.get('*', (req: Request, res: Response) => {
     const htmlPath = path.join(WEB_BUILD_PATH, 'index.html');
     
     if (!fs.existsSync(htmlPath)) {
       return res.status(503).send('Service unavailable - frontend not built');
     }
     
-    const htmlTemplate = fs.readFileSync(htmlPath, 'utf-8');
-    
-    // Check if this is a customer subdomain
-    if (subdomain && subdomain !== 'www') {
-      // Render published site
-      const site = getSiteBySlug(subdomain);
-      
-      if (!site) {
-        return res.status(404).send('Site not found');
-      }
-      
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const ogTags = generateOGTags(site, baseUrl);
-      
-      const html = renderHTMLWithOGTags(htmlTemplate, ogTags, {
-        slug: site.slug,
-        templateId: site.templateId,
-        data: site.data
-      });
-      
-      return res.send(html);
-    }
-    
-    // Main domain - serve SPA (landing, editor, admin)
-    const html = renderAppHTML(htmlTemplate);
-    res.send(html);
-    
-  } catch (error) {
-    console.error('Error rendering page:', error);
-    res.status(500).send('Internal server error');
-  }
-});
+    res.sendFile(htmlPath);
+  });
+} else {
+  // Frontend not built - show development message
+  app.get('*', (req: Request, res: Response) => {
+    res.status(503).send(`
+      <html>
+        <head><title>Development Mode</title></head>
+        <body style="font-family: system-ui; padding: 2rem; max-width: 600px; margin: 0 auto;">
+          <h1>🚧 Development Mode</h1>
+          <p>The frontend has not been built yet.</p>
+          <p>The backend API is running at <code>http://localhost:${PORT}</code></p>
+          <h2>Available Endpoints:</h2>
+          <ul>
+            <li><code>GET /healthz</code> - Health check</li>
+            <li><code>POST /api/auth/signup</code> - Create account</li>
+            <li><code>POST /api/auth/login</code> - Login</li>
+            <li><code>POST /api/auth/refresh</code> - Refresh token</li>
+            <li><code>POST /api/auth/logout</code> - Logout</li>
+            <li><code>POST /api/auth/verify-email</code> - Verify email</li>
+            <li><code>POST /api/auth/forgot-password</code> - Request password reset</li>
+            <li><code>POST /api/auth/reset-password</code> - Reset password</li>
+          </ul>
+          <p>Start the frontend dev server:</p>
+          <pre>cd web && npm run dev</pre>
+        </body>
+      </html>
+    `);
+  });
+}
 
-// Error handling middleware
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('Unhandled error:', err);
-  
-  res.status(500).json({
-    error: process.env.NODE_ENV === 'production' 
-      ? 'Internal server error' 
-      : err.message
+// ============================================================================
+// ERROR HANDLING
+// ============================================================================
+
+// 404 handler
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    error: 'Not found',
+    message: 'The requested resource was not found',
+    path: req.path,
   });
 });
 
-// Periodic tasks
-setInterval(() => {
-  try {
-    const expired = OrderService.expireReservations();
-    if (expired > 0) {
-      console.log(`Expired ${expired} reservations`);
-    }
-  } catch (error) {
-    console.error('Error expiring reservations:', error);
-  }
-}, 60 * 60 * 1000); // Every hour
+// Global error handler
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error('❌ Unhandled error:', err);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`✓ Server running on port ${PORT}`);
-  console.log(`✓ Base domain: ${BASE_DOMAIN}`);
-  console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`\n🚀 Wedding Invitation Platform is ready!`);
+  // Prisma errors
+  if (err.constructor.name.includes('Prisma')) {
+    return res.status(500).json({
+      error: 'Database error',
+      message: NODE_ENV === 'development' ? err.message : 'A database error occurred',
+    });
+  }
+
+  res.status(500).json({
+    error: 'Internal server error',
+    message: NODE_ENV === 'development' ? err.message : 'An unexpected error occurred',
+  });
 });
 
-/**
- * Extract subdomain from hostname
- */
-function extractSubdomain(hostname: string, baseDomain: string): string | null {
-  // Remove port if present
-  const host = hostname.split(':')[0];
-  
-  // localhost or IP address - no subdomain
-  if (host === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
-    return null;
-  }
-  
-  // Remove base domain to get subdomain
-  const parts = host.split('.');
-  const baseParts = baseDomain.split('.');
-  
-  if (parts.length <= baseParts.length) {
-    return null;
-  }
-  
-  // Return first part as subdomain
-  return parts[0];
-}
+// ============================================================================
+// GRACEFUL SHUTDOWN
+// ============================================================================
+
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('\nSIGINT received, shutting down gracefully...');
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+// ============================================================================
+// START SERVER
+// ============================================================================
+
+app.listen(PORT, () => {
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🚀 Wedding Invitation SaaS Platform');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`✅ Server:      http://localhost:${PORT}`);
+  console.log(`✅ Environment: ${NODE_ENV}`);
+  console.log(`✅ CORS:        ${CORS_ORIGIN}`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('📋 API Endpoints:');
+  console.log('   POST /api/auth/signup          - Create account');
+  console.log('   POST /api/auth/login           - Login');
+  console.log('   POST /api/auth/refresh         - Refresh token');
+  console.log('   POST /api/auth/logout          - Logout');
+  console.log('   POST /api/auth/verify-email    - Verify email');
+  console.log('   POST /api/auth/forgot-password - Request password reset');
+  console.log('   POST /api/auth/reset-password  - Reset password');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('');
+});
 
 export default app;
