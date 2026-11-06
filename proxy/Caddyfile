@@ -1,0 +1,52 @@
+# Main domain and wildcard subdomains
+{$BASE_DOMAIN:localhost}, *.{$BASE_DOMAIN:localhost} {
+    # Use automatic HTTPS (for production with real domain)
+    # For local development, it will use self-signed certs
+    
+    # Gzip compression
+    encode gzip
+
+    # Health check endpoint
+    handle /healthz {
+        reverse_proxy app:3000
+    }
+
+    # Static files with long cache
+    handle /assets/* {
+        reverse_proxy app:3000
+        header Cache-Control "public, max-age=31536000, immutable"
+    }
+
+    # Customer uploads with long cache
+    handle /uploads/* {
+        reverse_proxy app:3000
+        header Cache-Control "public, max-age=31536000"
+    }
+
+    # Admin routes - no cache
+    handle /admin/* {
+        reverse_proxy app:3000
+        header Cache-Control "no-store, no-cache, must-revalidate"
+    }
+
+    # API routes - no cache
+    handle /api/* {
+        reverse_proxy app:3000
+        header Cache-Control "no-store, no-cache, must-revalidate"
+    }
+
+    # All other routes (SPA + published sites)
+    handle {
+        reverse_proxy app:3000
+        # Short cache for published sites
+        header Cache-Control "public, max-age=60"
+    }
+
+    # Security headers
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+}

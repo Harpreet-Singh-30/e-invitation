@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./proxy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    networks:
+      - wedding-network
+
+  app:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_PATH=/data/wedding.db
+      - UPLOADS_PATH=/data/uploads
+      - JWT_SECRET=change-this-in-production-to-random-64-char-string
+      - ADMIN_PASSWORD_HASH=$$2b$$10$$YourHashedPasswordHere
+      - BASE_DOMAIN=localhost
+      - UPI_ID=placeholder@upi
+      - EMAIL_FROM=noreply@example.com
+    volumes:
+      - app_data:/data
+      - ./server/src:/app/src
+    networks:
+      - wedding-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  caddy_data:
+  caddy_config:
+  app_data:
+
+networks:
+  wedding-network:
+    driver: bridge
