@@ -32,7 +32,7 @@ export interface TokenPair {
  */
 export function generateAccessToken(payload: JWTPayload): string {
   return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_ACCESS_EXPIRY,
+    expiresIn: JWT_ACCESS_EXPIRY as any,
     issuer: 'wedding-saas',
     audience: 'wedding-saas-api',
   });
@@ -46,7 +46,7 @@ export function generateRefreshToken(payload: JWTPayload): string {
     { userId: payload.userId, email: payload.email },
     JWT_REFRESH_SECRET,
     {
-      expiresIn: JWT_REFRESH_EXPIRY,
+      expiresIn: JWT_REFRESH_EXPIRY as any,
       issuer: 'wedding-saas',
       audience: 'wedding-saas-api',
     }
@@ -155,7 +155,7 @@ export function hashGuestToken(token: string): string {
 export function generateEmailVerificationToken(userId: string, email: string): string {
   const payload = { userId, email, purpose: 'email_verification' };
   return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: process.env.EMAIL_VERIFICATION_EXPIRY || '24h',
+    expiresIn: (process.env.EMAIL_VERIFICATION_EXPIRY || '24h') as any,
     issuer: 'wedding-saas',
   });
 }
@@ -188,7 +188,7 @@ export function verifyEmailVerificationToken(token: string): { userId: string; e
 export function generatePasswordResetToken(userId: string, email: string): string {
   const payload = { userId, email, purpose: 'password_reset' };
   return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: process.env.PASSWORD_RESET_EXPIRY || '1h',
+    expiresIn: (process.env.PASSWORD_RESET_EXPIRY || '1h') as any,
     issuer: 'wedding-saas',
   });
 }

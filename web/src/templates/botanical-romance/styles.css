@@ -1,0 +1,229 @@
+.ih-botanical-romance {
+  --ivory: #FCFAF5; --sage: #9BAA91; --olive: #59694E; --blush: #E8C9C4; --champ: #D3BD93; --char: #34362F;
+  --serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --sans: 'Jost', 'Helvetica Neue', Arial, sans-serif;
+  --line: rgba(89, 105, 78, .3);
+  position: relative; background: var(--ivory); color: var(--char); font-family: var(--serif);
+  font-size: clamp(19px, .5vw + 16px, 22px); line-height: 1.6; overflow-x: clip; -webkit-font-smoothing: antialiased;
+}
+.ih-botanical-romance *, .ih-botanical-romance *::before, .ih-botanical-romance *::after { box-sizing: border-box; }
+.ih-botanical-romance::after { /* translucent paper grain */
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 60; opacity: .5; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 .55 0 0 0 0 .5 0 0 0 0 .38 0 0 0 .11 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.ih-botanical-romance h1, .ih-botanical-romance h2, .ih-botanical-romance h3, .ih-botanical-romance p, .ih-botanical-romance dl, .ih-botanical-romance dd, .ih-botanical-romance figure, .ih-botanical-romance ul, .ih-botanical-romance ol { margin: 0; padding: 0; font-weight: 300; }
+.ih-botanical-romance ul, .ih-botanical-romance ol { list-style: none; }
+.ih-botanical-romance a { color: inherit; }
+.ih-botanical-romance svg { display: block; }
+.ih-botanical-romance :focus-visible { outline: 2px solid var(--olive); outline-offset: 4px; border-radius: 2px; }
+.ih-botanical-romance .br-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.ih-botanical-romance .br-small { font-family: var(--sans); font-weight: 300; font-size: .78rem; letter-spacing: .14em; text-transform: lowercase; color: var(--olive); }
+.ih-botanical-romance .br-h { font-size: clamp(2.4rem, 5vw, 4.4rem); line-height: 1.02; letter-spacing: -.01em; color: var(--char); }
+.ih-botanical-romance .br-h--c { text-align: center; }
+.ih-botanical-romance .br-div { width: 150px; margin: 0 auto 1.4rem; color: var(--olive); }
+.ih-botanical-romance .br-p { max-width: 38em; font-size: 1.08rem; color: rgba(52, 54, 47, .86); }
+.ih-botanical-romance .br-sec { position: relative; padding: clamp(5rem, 11vw, 10rem) clamp(1.4rem, 6vw, 6rem); }
+.ih-botanical-romance .br-sway { animation: br-sway 11s ease-in-out infinite alternate; transform-origin: 50% 50%; }
+@keyframes br-sway { from { rotate: -2.5deg; translate: 0 0; } to { rotate: 3deg; translate: 0 8px; } }
+
+/* reveals */
+.ih-botanical-romance[data-ready] [data-reveal]:not(.is-in) { opacity: 0; transform: translateY(14px); }
+.ih-botanical-romance [data-reveal] { transition: opacity 1.1s ease var(--d, 0ms), transform 1.3s cubic-bezier(.2, .7, .2, 1) var(--d, 0ms); }
+
+/* nav */
+.ih-botanical-romance .br-nav { position: fixed; z-index: 40; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 1.5rem; padding: .7rem clamp(1rem, 4vw, 3rem); background: rgba(252, 250, 245, .86); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); transform: translateY(-101%); transition: transform .6s ease; }
+.ih-botanical-romance .br-nav.is-on { transform: none; }
+.ih-botanical-romance .br-nav__mono { font-style: italic; font-size: 1.35rem; text-decoration: none; color: var(--olive); white-space: nowrap; }
+.ih-botanical-romance .br-nav ul { display: flex; gap: clamp(1rem, 2.4vw, 2.2rem); margin-left: auto; overflow-x: auto; scrollbar-width: none; }
+.ih-botanical-romance .br-nav a:not(.br-nav__mono) { font-family: var(--sans); font-size: .82rem; font-weight: 300; text-decoration: none; white-space: nowrap; padding: .4rem 0; background: linear-gradient(var(--olive), var(--olive)) 0 100% / 0 1px no-repeat; transition: background-size .4s; }
+.ih-botanical-romance .br-nav a:not(.br-nav__mono):hover { background-size: 100% 1px; }
+.ih-botanical-romance .br-btn { display: inline-block; font-family: var(--sans); font-weight: 300; font-size: .9rem; letter-spacing: .04em; text-decoration: none; cursor: pointer; padding: .95rem 2rem; border: 1px solid var(--olive); background: var(--olive); color: var(--ivory); border-radius: 999px; transition: background .3s, color .3s; }
+.ih-botanical-romance .br-btn:hover { background: transparent; color: var(--olive); }
+.ih-botanical-romance .br-btn--o { background: transparent; color: var(--olive); }
+.ih-botanical-romance .br-btn--o:hover { background: var(--olive); color: var(--ivory); }
+
+/* opening */
+.ih-botanical-romance .br-open { position: relative; min-height: 100svh; display: grid; place-items: center; overflow: hidden; overflow: clip; contain: paint; text-align: center; background: radial-gradient(ellipse at 50% 45%, #FFFDF8 0, var(--ivory) 60%, #F6F0E4 100%); }
+.ih-botanical-romance .br-open > svg { position: absolute; }
+.ih-botanical-romance .br-open__b1 { width: min(56vw, 520px); left: -14vw; top: -12vh; }
+.ih-botanical-romance .br-open__b2 { width: min(34vw, 340px); left: 7vw; bottom: -10vh; }
+.ih-botanical-romance .br-open__b3 { width: min(36vw, 360px); right: -9vw; top: 6vh; }
+.ih-botanical-romance .br-open__b4 { width: min(52vw, 500px); right: -12vw; bottom: -14vh; }
+.ih-botanical-romance .br-open__s1 { width: min(16vw, 130px); left: 22vw; top: 4vh; color: var(--olive); opacity: .75; }
+.ih-botanical-romance .br-open__s2 { width: min(18vw, 150px); right: 20vw; bottom: 3vh; color: var(--olive); opacity: .75; }
+.ih-botanical-romance .br-open__c { position: relative; z-index: 2; display: grid; justify-items: center; gap: 1.1rem; padding: 2rem; }
+.ih-botanical-romance .br-open__c > * { animation: br-rise 1.6s cubic-bezier(.2, .7, .2, 1) both; }
+.ih-botanical-romance .br-open__c > :nth-child(2) { animation-delay: .5s; }
+.ih-botanical-romance .br-open__c > :nth-child(3) { animation-delay: .9s; }
+.ih-botanical-romance .br-open__c > :nth-child(4) { animation-delay: 1.3s; }
+@keyframes br-rise { from { opacity: 0; transform: translateY(16px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+.ih-botanical-romance .br-mono { width: clamp(180px, 24vw, 260px); color: var(--olive); }
+.ih-botanical-romance .br-mono__t { font-family: var(--serif); font-style: italic; font-weight: 300; font-size: 78px; fill: var(--olive); }
+.ih-botanical-romance .br-mono__amp { font-family: var(--serif); font-style: italic; font-size: 26px; fill: var(--char); }
+.ih-botanical-romance .br-open__n { font-size: clamp(1.6rem, 3vw, 2.4rem); font-style: italic; }
+.ih-botanical-romance .br-open__d { font-family: var(--sans); font-size: .85rem; letter-spacing: .18em; color: var(--olive); margin-bottom: .8rem; }
+
+/* hero */
+.ih-botanical-romance .br-hero { display: grid; grid-template-columns: 1.15fr .85fr; gap: clamp(1.5rem, 4vw, 5rem); align-items: center; min-height: 100svh; padding: clamp(5rem, 9vw, 8rem) clamp(1.4rem, 6vw, 6rem); background: linear-gradient(180deg, #F6F0E4, var(--ivory) 30%); }
+.ih-botanical-romance .br-hero__t { display: grid; gap: 1.4rem; }
+.ih-botanical-romance .br-hero h1 { font-size: clamp(4.4rem, 12.5vw, 12.5rem); line-height: .84; letter-spacing: -.03em; display: grid; color: var(--char); }
+.ih-botanical-romance .br-n2 { margin-left: clamp(2rem, 12vw, 11rem); }
+.ih-botanical-romance .br-and { font-style: italic; font-size: .3em; color: var(--olive); margin: .2em 0 .1em clamp(1rem, 6vw, 5rem); letter-spacing: 0; }
+.ih-botanical-romance .br-tag { font-style: italic; font-size: clamp(1.3rem, 2.2vw, 1.9rem); color: var(--olive); max-width: 22em; }
+.ih-botanical-romance .br-when { font-family: var(--sans); font-size: .9rem; line-height: 1.9; letter-spacing: .04em; padding-top: 1.2rem; border-top: 1px solid var(--line); max-width: 24rem; }
+.ih-botanical-romance .br-hero__p { justify-self: end; width: min(100%, 520px); margin-top: clamp(0rem, 6vw, 5rem); }
+.ih-botanical-romance .br-arch { position: relative; aspect-ratio: 4 / 5.4; border-radius: 999px 999px 4px 4px; overflow: hidden; box-shadow: 0 0 0 1px var(--line), 0 0 0 10px var(--ivory), 0 0 0 11px var(--line); }
+.ih-botanical-romance .br-arch img { width: 100%; height: 100%; object-fit: cover; }
+.ih-botanical-romance .br-arch--art { background: linear-gradient(180deg, rgba(232, 201, 196, .45), rgba(155, 170, 145, .35)); }
+.ih-botanical-romance .br-arch--art > * { position: absolute; }
+.ih-botanical-romance .a1 { width: 78%; left: -14%; top: 12%; } .ih-botanical-romance .a2 { width: 56%; right: -8%; top: 38%; } .ih-botanical-romance .a3 { width: 62%; left: 14%; bottom: -14%; }
+.ih-botanical-romance .a4 { width: 30%; right: 12%; top: 4%; color: var(--olive); }
+
+/* welcome */
+.ih-botanical-romance .br-welcome { display: grid; justify-items: center; }
+.ih-botanical-romance .br-welcome__b { max-width: 44rem; display: grid; gap: 1.6rem; text-align: center; justify-items: center; }
+.ih-botanical-romance .br-lede { font-size: clamp(1.7rem, 3.2vw, 2.6rem); line-height: 1.3; font-style: italic; color: var(--olive); }
+.ih-botanical-romance .br-welcome .br-p { text-align: center; }
+.ih-botanical-romance .br-sign { font-size: 1.5rem; font-style: italic; margin-top: .6rem; }
+.ih-botanical-romance .br-side { position: absolute; top: 8%; width: clamp(60px, 11vw, 140px); color: var(--olive); opacity: .55; }
+.ih-botanical-romance .br-side--l { left: clamp(.5rem, 4vw, 4rem); } .ih-botanical-romance .br-side--r { right: clamp(.5rem, 4vw, 4rem); }
+
+/* story */
+.ih-botanical-romance .br-story { background: rgba(155, 170, 145, .13); }
+.ih-botanical-romance .br-tl { position: relative; max-width: 62rem; margin: clamp(3rem, 6vw, 5rem) auto 0; display: grid; gap: clamp(2.5rem, 5vw, 4.5rem); }
+.ih-botanical-romance .br-tl::before { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: var(--line); }
+.ih-botanical-romance .br-tl li { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem, 6vw, 5rem); position: relative; align-items: start; }
+.ih-botanical-romance .br-tl__y { font-style: italic; font-size: clamp(2.4rem, 5vw, 4rem); line-height: 1; text-align: right; color: var(--olive); }
+.ih-botanical-romance .br-tl__dot { position: absolute; left: 50%; top: .9rem; width: 11px; height: 11px; translate: -50% 0; border-radius: 50% 0 50% 0; rotate: 45deg; background: var(--blush); border: 1px solid var(--olive); }
+.ih-botanical-romance .br-tl h3 { font-size: 1.7rem; margin-bottom: .4rem; }
+.ih-botanical-romance .br-tl p { font-size: 1.05rem; color: rgba(52, 54, 47, .85); }
+.ih-botanical-romance .br-tl li:nth-child(even) .br-tl__y { order: 2; text-align: left; }
+.ih-botanical-romance .br-tl li:nth-child(even) .br-tl__c { order: 1; text-align: right; }
+
+/* countdown */
+.ih-botanical-romance .br-count { position: relative; text-align: center; overflow: hidden; overflow: clip; contain: paint; display: grid; gap: 2rem; justify-items: center; }
+.ih-botanical-romance .br-count__b1 { position: absolute; width: min(44vw, 420px); left: -12vw; top: -8%; opacity: .85; }
+.ih-botanical-romance .br-count__b2 { position: absolute; width: min(38vw, 360px); right: -10vw; bottom: -10%; opacity: .85; }
+.ih-botanical-romance .br-count__g { position: relative; display: flex; gap: clamp(.8rem, 4vw, 4.5rem); justify-content: center; }
+.ih-botanical-romance .br-count__g > div { display: grid; justify-items: center; min-width: 2ch; }
+.ih-botanical-romance .br-count__n { font-size: clamp(3.4rem, 12vw, 9.5rem); line-height: 1; font-weight: 300; font-variant-numeric: lining-nums tabular-nums; color: var(--olive); letter-spacing: -.02em; }
+.ih-botanical-romance .br-count__l { font-style: italic; font-size: 1.15rem; color: var(--char); }
+
+/* chapters */
+.ih-botanical-romance .br-chs { display: grid; gap: clamp(4rem, 9vw, 8rem); }
+.ih-botanical-romance .br-chs > div:first-child { margin-bottom: 0; }
+.ih-botanical-romance .br-ch { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(2rem, 6vw, 6rem); align-items: center; max-width: 76rem; margin: 0 auto; width: 100%; }
+.ih-botanical-romance .br-ch.is-r .br-ch__t { order: 2; } .ih-botanical-romance .br-ch.is-r .br-ch__a { order: 1; }
+.ih-botanical-romance .br-ch__t { display: grid; gap: 1rem; justify-items: start; }
+.ih-botanical-romance .br-ch__no { font-style: italic; font-size: clamp(4.5rem, 9vw, 8rem); line-height: .8; color: transparent; -webkit-text-stroke: 1px var(--olive); }
+.ih-botanical-romance .br-ch__name { font-style: italic; font-size: 1.3rem; color: var(--olive); }
+.ih-botanical-romance .br-ch h3 { font-size: clamp(2.3rem, 4.6vw, 4rem); line-height: 1; }
+.ih-botanical-romance .br-ch dl { width: 100%; max-width: 32rem; border-top: 1px solid var(--line); }
+.ih-botanical-romance .br-ch dl > div { display: grid; grid-template-columns: 5rem 1fr; gap: 1rem; padding: .85rem 0; border-bottom: 1px solid var(--line); }
+.ih-botanical-romance .br-ch dt { font-family: var(--sans); font-size: .76rem; letter-spacing: .1em; color: var(--olive); padding-top: .45rem; }
+.ih-botanical-romance .br-ch dd { font-size: 1.15rem; }
+.ih-botanical-romance .br-addr { display: block; font-size: .98rem; color: rgba(52, 54, 47, .75); }
+.ih-botanical-romance .br-ch__a { position: relative; aspect-ratio: 1 / 1.05; width: 100%; max-width: 440px; justify-self: center; border: 1px solid var(--line); border-radius: 220px 220px 6px 6px; background: rgba(255, 255, 255, .42); overflow: hidden; }
+.ih-botanical-romance .br-ch__a::before { content: ''; position: absolute; inset: 9px; border: 1px solid var(--line); border-radius: 212px 212px 3px 3px; }
+.ih-botanical-romance .br-ch__a > * { position: absolute; }
+.ih-botanical-romance .c1 { width: 80%; left: -12%; bottom: -10%; } .ih-botanical-romance .c2 { width: 52%; right: -6%; top: 30%; }
+.ih-botanical-romance .c3 { width: 24%; left: 50%; top: 8%; color: var(--olive); }
+
+/* gallery */
+.ih-botanical-romance .br-gal { padding-inline: clamp(.8rem, 3vw, 3rem); }
+.ih-botanical-romance .br-gal__g { margin-top: clamp(2.5rem, 5vw, 4rem); display: grid; grid-template-columns: repeat(6, 1fr); gap: clamp(.6rem, 1.6vw, 1.6rem); align-items: start; }
+.ih-botanical-romance .br-ph { appearance: none; border: 0; padding: 0; background: var(--blush); cursor: zoom-in; overflow: hidden; position: relative; }
+.ih-botanical-romance .br-ph img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 1.4s cubic-bezier(.2, .7, .2, 1); }
+.ih-botanical-romance .br-ph:hover img { transform: scale(1.04); }
+.ih-botanical-romance .br-ph--0 { grid-column: span 3; aspect-ratio: 4 / 5; border-radius: 999px 999px 0 0; }
+.ih-botanical-romance .br-ph--1 { grid-column: span 3; aspect-ratio: 3 / 2; margin-top: clamp(2rem, 9vw, 9rem); }
+.ih-botanical-romance .br-ph--2 { grid-column: span 2; aspect-ratio: 4 / 5; }
+.ih-botanical-romance .br-ph--3 { grid-column: span 2; aspect-ratio: 1; margin-top: clamp(1rem, 5vw, 5rem); border-radius: 50%; }
+.ih-botanical-romance .br-ph--4 { grid-column: span 2; aspect-ratio: 4 / 5; }
+.ih-botanical-romance .br-ph--5 { grid-column: span 6; aspect-ratio: 21 / 9; }
+.ih-botanical-romance .br-lb { position: fixed; inset: 0; z-index: 100; background: rgba(40, 42, 36, .94); display: grid; place-items: center; padding: 3.5rem 4rem; animation: br-rise .5s ease both; }
+.ih-botanical-romance .br-lb figure { display: grid; gap: .8rem; max-height: 100%; justify-items: center; }
+.ih-botanical-romance .br-lb img { max-width: 100%; max-height: calc(100svh - 11rem); object-fit: contain; }
+.ih-botanical-romance .br-lb figcaption { color: var(--ivory); font-style: italic; font-size: 1.1rem; display: flex; gap: 1rem; }
+.ih-botanical-romance .br-lb figcaption span { font-family: var(--sans); font-style: normal; font-size: .8rem; opacity: .7; align-self: center; }
+.ih-botanical-romance .br-lb button { position: absolute; background: none; border: 1px solid rgba(252, 250, 245, .4); color: var(--ivory); width: 2.8rem; height: 2.8rem; border-radius: 50%; font-size: 1.7rem; line-height: 1; cursor: pointer; font-family: var(--serif); }
+.ih-botanical-romance .br-lb button:hover { background: rgba(252, 250, 245, .15); }
+.ih-botanical-romance .br-lb__x { top: 1rem; right: 1rem; } .ih-botanical-romance .br-lb__p { left: .8rem; top: 50%; } .ih-botanical-romance .br-lb__nx { right: .8rem; top: 50%; }
+
+/* venue */
+.ih-botanical-romance .br-venue { display: grid; gap: 3rem; max-width: 76rem; margin: 0 auto; }
+.ih-botanical-romance .br-v { display: grid; gap: 1.2rem; padding: clamp(1.6rem, 4vw, 3.2rem); max-width: 44rem; border: 1px solid var(--line); background: rgba(255, 255, 255, .5); border-radius: 4px 160px 4px 4px; position: relative; }
+.ih-botanical-romance .br-v::before { content: ''; position: absolute; inset: 7px; border: 1px solid var(--line); border-radius: 2px 154px 2px 2px; pointer-events: none; }
+.ih-botanical-romance .br-v h3 { font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.05; }
+.ih-botanical-romance .br-v address { font-style: normal; font-size: 1.2rem; color: var(--olive); }
+.ih-botanical-romance .br-v__e { display: grid; gap: .3rem; font-family: var(--sans); font-size: .88rem; }
+.ih-botanical-romance .br-v__e li { display: flex; gap: .8rem; border-bottom: 1px solid var(--line); padding: .4rem 0; justify-content: space-between; }
+.ih-botanical-romance .br-v__e span { font-family: var(--serif); font-style: italic; font-size: 1.1rem; }
+.ih-botanical-romance .br-v__a { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: .4rem; }
+
+/* closing */
+.ih-botanical-romance .br-close { position: relative; min-height: 100svh; display: grid; place-items: center; overflow: hidden; overflow: clip; contain: paint; text-align: center; background: radial-gradient(ellipse at 50% 50%, #FFFDF8, #F4EDE0); }
+.ih-botanical-romance .br-close > svg { position: absolute; }
+.ih-botanical-romance .k1 { width: min(52vw, 480px); left: -12vw; top: -10vh; } .ih-botanical-romance .k2 { width: min(34vw, 320px); right: 4vw; top: -8vh; }
+.ih-botanical-romance .k3 { width: min(40vw, 380px); left: 2vw; bottom: -12vh; } .ih-botanical-romance .k4 { width: min(54vw, 500px); right: -13vw; bottom: -12vh; }
+.ih-botanical-romance .k5 { width: min(15vw, 120px); left: 24vw; bottom: 2vh; color: var(--olive); opacity: .7; } .ih-botanical-romance .k6 { width: min(15vw, 120px); right: 26vw; top: 2vh; color: var(--olive); opacity: .7; }
+.ih-botanical-romance .br-close__c { position: relative; display: grid; gap: 1rem; justify-items: center; padding: 2rem; max-width: 34rem; }
+.ih-botanical-romance .br-close__t { font-style: italic; font-size: clamp(1.6rem, 3vw, 2.3rem); line-height: 1.3; color: var(--olive); }
+.ih-botanical-romance .br-close__n { font-family: var(--sans); font-size: .85rem; letter-spacing: .18em; }
+
+/* music */
+.ih-botanical-romance .br-music { position: fixed; z-index: 45; right: clamp(.8rem, 2vw, 1.6rem); bottom: clamp(.8rem, 2vw, 1.6rem); width: 3rem; height: 3rem; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--olive); background: rgba(252, 250, 245, .9); color: var(--olive); cursor: pointer; }
+.ih-botanical-romance .br-music[aria-pressed='true'] { background: var(--olive); color: var(--ivory); }
+
+@media (max-width: 860px) {
+  .ih-botanical-romance .br-hero, .ih-botanical-romance .br-ch { grid-template-columns: 1fr; }
+  .ih-botanical-romance .br-hero { min-height: 0; }
+  .ih-botanical-romance .br-hero__p { justify-self: center; margin-top: 1rem; width: min(100%, 380px); }
+  .ih-botanical-romance .br-ch.is-r .br-ch__t, .ih-botanical-romance .br-ch.is-r .br-ch__a { order: initial; }
+  .ih-botanical-romance .br-ch__a { max-width: 340px; }
+  .ih-botanical-romance .br-nav__mono { display: none; }
+  .ih-botanical-romance .br-nav ul { margin: 0; }
+  .ih-botanical-romance .br-tl::before { left: 6px; }
+  .ih-botanical-romance .br-tl li, .ih-botanical-romance .br-tl li:nth-child(even) { grid-template-columns: 1fr; gap: .6rem; padding-left: 2rem; }
+  .ih-botanical-romance .br-tl__dot { left: 6px; top: .7rem; }
+  .ih-botanical-romance .br-tl__y, .ih-botanical-romance .br-tl li:nth-child(even) .br-tl__y { text-align: left; order: 0; }
+  .ih-botanical-romance .br-tl li:nth-child(even) .br-tl__c { text-align: left; order: 0; }
+  .ih-botanical-romance .br-gal__g { grid-template-columns: repeat(2, 1fr); }
+  .ih-botanical-romance .br-ph--0, .ih-botanical-romance .br-ph--5 { grid-column: span 2; }
+  .ih-botanical-romance .br-ph--1 { grid-column: span 2; margin-top: 0; }
+  .ih-botanical-romance .br-ph--2, .ih-botanical-romance .br-ph--3, .ih-botanical-romance .br-ph--4 { grid-column: span 1; margin-top: 0; }
+  .ih-botanical-romance .br-ph--0 { max-width: 82%; margin-inline: auto; }
+  .ih-botanical-romance .br-lb { padding: 3.5rem .6rem; }
+  .ih-botanical-romance .br-lb__p, .ih-botanical-romance .br-lb__nx { top: auto; bottom: .8rem; }
+  .ih-botanical-romance .br-side { display: none; }
+  .ih-botanical-romance .br-ch dl > div { grid-template-columns: 4rem 1fr; }
+}
+@media (max-width: 640px) {
+  .ih-botanical-romance { font-size: 15px; overflow-x: clip; }
+  .ih-botanical-romance .br-open { overflow: hidden; max-width: 100%; }
+  .ih-botanical-romance .br-open__c { padding: 1.2rem; gap: 0.8rem; }
+  .ih-botanical-romance .br-open__b1,
+  .ih-botanical-romance .br-open__b2,
+  .ih-botanical-romance .br-open__b3,
+  .ih-botanical-romance .br-open__b4 { max-width: 45vw; }
+  .ih-botanical-romance .br-mono { width: clamp(140px, 35vw, 200px); }
+  .ih-botanical-romance .br-open__n { font-size: clamp(1.4rem, 5vw, 2rem); }
+  .ih-botanical-romance .br-hero { padding: 4rem 1.2rem; }
+  .ih-botanical-romance .br-hero h1 { font-size: clamp(2rem, 8vw, 3.4rem); word-break: break-word; text-wrap: balance; }
+  .ih-botanical-romance .br-n2 { margin-left: 0.5rem; }
+  .ih-botanical-romance .br-and { margin: 0.2em 0 0.1em 0.5rem; }
+  .ih-botanical-romance .br-sec { padding: 4rem 1.2rem; }
+  .ih-botanical-romance .br-count { position: relative; overflow: hidden; contain: paint; max-width: 100%; padding: 3rem 0.5rem; }
+  .ih-botanical-romance .br-count__g { gap: 0.4rem; max-width: 100%; }
+  .ih-botanical-romance .br-count__n { font-size: clamp(1.7rem, 7.5vw, 2.5rem); }
+  .ih-botanical-romance .br-count__l { font-size: 0.78rem; }
+  .ih-botanical-romance .br-count__b1 { left: 0; width: 25vw; }
+  .ih-botanical-romance .br-count__b2 { right: 0; width: 25vw; }
+  .ih-botanical-romance .br-close { overflow: hidden; max-width: 100%; }
+  .ih-botanical-romance .k1, .ih-botanical-romance .k2,
+  .ih-botanical-romance .k3, .ih-botanical-romance .k4 { max-width: 40vw; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ih-botanical-romance *, .ih-botanical-romance *::before { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .ih-botanical-romance [data-reveal] { opacity: 1 !important; transform: none !important; }
+}

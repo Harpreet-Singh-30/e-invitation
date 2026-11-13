@@ -28,7 +28,6 @@ interface TemplateProps {
 
 export default function RoyalMaroonTemplate({ data }: TemplateProps) {
   const [invitationOpened, setInvitationOpened] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showRSVP, setShowRSVP] = useState(false);
 
@@ -36,7 +35,6 @@ export default function RoyalMaroonTemplate({ data }: TemplateProps) {
   const mainEvent = data.events.find(e => e.key === 'wedding') || data.events[0];
 
   useEffect(() => {
-    setMounted(true);
     
     const handleScroll = () => {
       const windowHeight = window.innerHeight;
@@ -522,7 +520,7 @@ function WelcomeMessage({ message }: { message: string }) {
 }
 
 // RSVP Section
-function RSVPSection({ id, coupleNames }: { id: string; coupleNames: string }) {
+function RSVPSection({ id }: { id: string; coupleNames?: string }) {
   const [formData, setFormData] = useState({ name: '', email: '', guests: '1', message: '', attending: 'yes' });
   const [submitted, setSubmitted] = useState(false);
 

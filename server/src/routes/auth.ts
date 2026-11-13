@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import {
   generateAccessToken,
@@ -148,7 +149,14 @@ router.post('/signup', async (req: Request, res: Response, next: NextFunction) =
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation error',
+        message: error.errors[0]?.message || 'Validation error',
         details: error.errors,
+      });
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return res.status(400).json({
+        error: 'User already exists',
+        message: 'An account with this email already exists.',
       });
     }
     next(error);
@@ -218,7 +226,14 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation error',
+        message: error.errors[0]?.message || 'Validation error',
         details: error.errors,
+      });
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return res.status(400).json({
+        error: 'User already exists',
+        message: 'An account with this email already exists.',
       });
     }
     next(error);
@@ -273,7 +288,14 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation error',
+        message: error.errors[0]?.message || 'Validation error',
         details: error.errors,
+      });
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return res.status(400).json({
+        error: 'User already exists',
+        message: 'An account with this email already exists.',
       });
     }
     next(error);
@@ -368,7 +390,14 @@ router.post('/verify-email', async (req: Request, res: Response, next: NextFunct
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation error',
+        message: error.errors[0]?.message || 'Validation error',
         details: error.errors,
+      });
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return res.status(400).json({
+        error: 'User already exists',
+        message: 'An account with this email already exists.',
       });
     }
     next(error);
@@ -398,7 +427,7 @@ router.post('/forgot-password', async (req: Request, res: Response, next: NextFu
     }
 
     // Generate reset token
-    const resetToken = generatePasswordResetToken(user.email);
+    const resetToken = generatePasswordResetToken(user.id, user.email);
 
     // TODO: Save reset token to separate table or cache (Redis)
     // For now, just generate it - in production you'd store the hash
@@ -418,7 +447,14 @@ router.post('/forgot-password', async (req: Request, res: Response, next: NextFu
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation error',
+        message: error.errors[0]?.message || 'Validation error',
         details: error.errors,
+      });
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return res.status(400).json({
+        error: 'User already exists',
+        message: 'An account with this email already exists.',
       });
     }
     next(error);
@@ -477,7 +513,14 @@ router.post('/reset-password', async (req: Request, res: Response, next: NextFun
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Validation error',
+        message: error.errors[0]?.message || 'Validation error',
         details: error.errors,
+      });
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return res.status(400).json({
+        error: 'User already exists',
+        message: 'An account with this email already exists.',
       });
     }
     next(error);

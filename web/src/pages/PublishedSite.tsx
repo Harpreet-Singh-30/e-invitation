@@ -1,7 +1,5 @@
 import { useEffect } from 'react';
-import RoyalMaroon from '../templates/royal-maroon-01/Template';
-import ModernFloral from '../templates/modern-floral-02/Template';
-import ClassicGold from '../templates/classic-gold-03/Template';
+import { resolveTemplate } from '../templates/registry';
 
 interface Props {
   data: {
@@ -11,14 +9,9 @@ interface Props {
   };
 }
 
-const TEMPLATE_COMPONENTS: Record<string, React.ComponentType<any>> = {
-  'royal-maroon-01': RoyalMaroon,
-  'modern-floral-02': ModernFloral,
-  'classic-gold-03': ClassicGold,
-};
-
 export default function PublishedSite({ data }: Props) {
-  const TemplateComponent = TEMPLATE_COMPONENTS[data.templateId] || RoyalMaroon;
+  const resolved = resolveTemplate(data.templateId || data.slug) || resolveTemplate('royal-maroon');
+  const TemplateComponent = resolved!.component;
 
   useEffect(() => {
     // Log page view

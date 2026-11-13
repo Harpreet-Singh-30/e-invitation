@@ -9,8 +9,10 @@ import { prisma } from './lib/prisma';
 
 // Import routes
 import authRoutes from './routes/auth';
+import invitationRoutes from './routes/invitations';
+import adminRoutes from './routes/admin';
+import publicInvitationRoutes from './routes/publicInvitations';
 // TODO: Import other routes as we build them
-// import invitationRoutes from './routes/invitations';
 // import guestRoutes from './routes/guests';
 // import themeRoutes from './routes/themes';
 
@@ -139,8 +141,16 @@ app.get('/healthz', async (req: Request, res: Response) => {
 // Authentication routes (with strict rate limiting)
 app.use('/api/auth', authLimiter, authRoutes);
 
+// Host invitation routes (with general rate limiting)
+app.use('/api/host/invitations', apiLimiter, invitationRoutes);
+
+// Admin routes (requires auth and admin role)
+app.use('/api/admin', apiLimiter, adminRoutes);
+
+// Public invitation routes (accessible to guests without auth)
+app.use('/api/public', apiLimiter, publicInvitationRoutes);
+
 // TODO: Add other routes as we build them
-// app.use('/api/invitations', apiLimiter, invitationRoutes);
 // app.use('/api/guests', apiLimiter, guestRoutes);
 // app.use('/api/themes', apiLimiter, themeRoutes);
 

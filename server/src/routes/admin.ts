@@ -1,375 +1,710 @@
-import { Router, Request, Response } from 'express';
-import db from '../db';
-import bcrypt from 'bcrypt';
-import { OrderService } from '../services/orders';
-import { generateSessionId } from '../lib/token';
+import { Router, Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
+import { prisma } from '../lib/prisma';
+import { requireAuth, requireRole } from '../middleware/auth';
 
 const router = Router();
 
-// Session middleware
-function requireAuth(req: Request, res: Response, next: Function) {
-  const sessionId = req.cookies?.admin_session;
-  
-  if (!sessionId) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-  
-  try {
-    const session = db.prepare(`
-      SELECT s.*, u.id as userId, u.username, u.email
-      FROM admin_sessions s
-      JOIN admin_users u ON s.admin_user_id = u.id
-      WHERE s.id = ? AND s.expires_at > datetime('now')
-    `).get(sessionId) as any;
-    
-    if (!session) {
-      return res.status(401).json({ error: 'Invalid or expired session' });
-    }
-    
-    (req as any).admin = {
-      id: session.userId,
-      username: session.username,
-      email: session.email
-    };
-    
-    next();
-  } catch (error) {
-    console.error('Auth error:', error);
-    res.status(500).json({ error: 'Authentication failed' });
-  }
-}
+// Protect all admin endpoints with authentication and admin role requirement
+router.use(requireAuth, requireRole(['admin']));
 
 /**
- * POST /admin/login
- * Admin login
+ * GET /api/admin/me
+ * Returns current admin profile
  */
-router.post('/login', async (req: Request, res: Response) => {
+router.get('/me', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { username, password } = req.body;
-    
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password required' });
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
     }
-    
-    const user = db.prepare(`
-      SELECT id, username, password_hash, email
-      FROM admin_users
-      WHERE username = ?
-    `).get(username) as any;
-    
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    
-    const valid = await bcrypt.compare(password, user.password_hash);
-    
-    if (!valid) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    
-    // Create session
-    const sessionId = generateSessionId();
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24); // 24 hour session
-    
-    db.prepare(`
-      INSERT INTO admin_sessions (id, admin_user_id, expires_at)
-      VALUES (?, ?, ?)
-    `).run(sessionId, user.id, expiresAt.toISOString());
-    
-    // Set cookie
-    res.cookie('admin_session', sessionId, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        subscriptionTier: true,
+        createdAt: true,
+      },
     });
-    
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ success: true, user });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/admin/stats
+ * Platform KPI metrics, occasion distribution, recent users and invitations
+ */
+router.get('/stats', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const [
+      totalUsers,
+      totalInvitations,
+      publishedInvitations,
+      liveInvitations,
+      totalThemes,
+      occasionsGroup,
+      recentUsers,
+      recentInvitations,
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.invitation.count(),
+      prisma.invitation.count({ where: { isPublished: true } }),
+      prisma.invitation.count({ where: { isLive: true } }),
+      prisma.theme.count(),
+      prisma.invitation.groupBy({
+        by: ['eventType'],
+        _count: { id: true },
+      }),
+      prisma.user.findMany({
+        take: 6,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          subscriptionTier: true,
+          createdAt: true,
+          _count: { select: { invitations: true } },
+        },
+      }),
+      prisma.invitation.findMany({
+        take: 6,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          eventType: true,
+          isPublished: true,
+          isLive: true,
+          createdAt: true,
+          user: { select: { name: true, email: true } },
+          theme: { select: { name: true, category: true } },
+        },
+      }),
+    ]);
+
+    // Format category distribution
+    const categoryDistribution = occasionsGroup.map((item) => ({
+      category: item.eventType,
+      count: item._count.id,
+    }));
+
     res.json({
       success: true,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email
-      }
+      stats: {
+        totalUsers,
+        totalInvitations,
+        publishedInvitations,
+        liveInvitations,
+        totalThemes,
+        categoryDistribution,
+        recentUsers,
+        recentInvitations,
+      },
     });
-  } catch (error: any) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+  } catch (error) {
+    next(error);
   }
 });
 
 /**
- * POST /admin/logout
+ * GET /api/admin/users
+ * Search and filter users list
  */
-router.post('/logout', requireAuth, (req: Request, res: Response) => {
-  const sessionId = req.cookies?.admin_session;
-  
-  if (sessionId) {
-    db.prepare(`DELETE FROM admin_sessions WHERE id = ?`).run(sessionId);
-  }
-  
-  res.clearCookie('admin_session');
-  res.json({ success: true });
-});
-
-/**
- * GET /admin/me
- * Get current admin user
- */
-router.get('/me', requireAuth, (req: Request, res: Response) => {
-  res.json({ user: (req as any).admin });
-});
-
-/**
- * GET /admin/orders
- * List all orders with filters
- */
-router.get('/orders', requireAuth, (req: Request, res: Response) => {
+router.get('/users', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { state, search } = req.query;
-    
-    let query = `
-      SELECT 
-        o.id, o.state, o.total_amount_paise as totalAmountPaise,
-        o.paid_amount_paise as paidAmountPaise,
-        o.reservation_expires_at as reservationExpiresAt,
-        o.created_at as createdAt,
-        c.email, c.phone, c.groom_name as groomName, c.bride_name as brideName,
-        t.id as templateId, t.name as templateName
-      FROM orders o
-      JOIN customers c ON o.customer_id = c.id
-      JOIN templates t ON o.template_id = t.id
-    `;
-    
-    const conditions: string[] = [];
-    const params: any[] = [];
-    
-    if (state) {
-      conditions.push('o.state = ?');
-      params.push(state);
+    const search = (req.query.search as string) || '';
+    const role = (req.query.role as string) || '';
+    const tier = (req.query.tier as string) || '';
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (search.trim()) {
+      where.OR = [
+        { name: { contains: search.trim(), mode: 'insensitive' } },
+        { email: { contains: search.trim(), mode: 'insensitive' } },
+      ];
     }
-    
-    if (search) {
-      conditions.push(`(
-        c.email LIKE ? OR 
-        c.phone LIKE ? OR 
-        c.groom_name LIKE ? OR 
-        c.bride_name LIKE ?
-      )`);
-      const searchPattern = `%${search}%`;
-      params.push(searchPattern, searchPattern, searchPattern, searchPattern);
+    if (role && role !== 'all') {
+      where.role = role;
     }
-    
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
+    if (tier && tier !== 'all') {
+      where.subscriptionTier = tier;
     }
-    
-    query += ' ORDER BY o.created_at DESC';
-    
-    const orders = db.prepare(query).all(...params) as any[];
-    
-    const ordersWithCalculations = orders.map(order => ({
-      ...order,
-      totalAmountRupees: order.totalAmountPaise / 100,
-      paidAmountRupees: order.paidAmountPaise / 100,
-      balanceRupees: (order.totalAmountPaise - order.paidAmountPaise) / 100
-    }));
-    
-    res.json({ orders: ordersWithCalculations });
-  } catch (error: any) {
-    console.error('Error fetching orders:', error);
-    res.status(500).json({ error: 'Failed to fetch orders' });
-  }
-});
 
-/**
- * GET /admin/payments
- * List pending payments for verification
- */
-router.get('/payments', requireAuth, (req: Request, res: Response) => {
-  try {
-    const { status = 'PENDING' } = req.query;
-    
-    const payments = db.prepare(`
-      SELECT 
-        p.id, p.payment_type as paymentType, p.amount_paise as amountPaise,
-        p.method, p.reference_id as referenceId, p.status,
-        p.screenshot_path as screenshotPath, p.created_at as createdAt,
-        o.id as orderId, o.state as orderState,
-        c.email, c.phone, c.groom_name as groomName, c.bride_name as brideName,
-        t.name as templateName
-      FROM payments p
-      JOIN orders o ON p.order_id = o.id
-      JOIN customers c ON o.customer_id = c.id
-      JOIN templates t ON o.template_id = t.id
-      WHERE p.status = ?
-      ORDER BY p.created_at ASC
-    `).all(status) as any[];
-    
-    const paymentsWithCalculations = payments.map(payment => ({
-      ...payment,
-      amountRupees: payment.amountPaise / 100
-    }));
-    
-    res.json({ payments: paymentsWithCalculations });
-  } catch (error: any) {
-    console.error('Error fetching payments:', error);
-    res.status(500).json({ error: 'Failed to fetch payments' });
-  }
-});
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          phone: true,
+          subscriptionTier: true,
+          subscriptionStatus: true,
+          createdAt: true,
+          lastLoginAt: true,
+          _count: { select: { invitations: true } },
+        },
+      }),
+      prisma.user.count({ where }),
+    ]);
 
-/**
- * POST /admin/payments/:id/verify
- * Verify a payment and advance order state
- */
-router.post('/payments/:id/verify', requireAuth, (req: Request, res: Response) => {
-  try {
-    const paymentId = parseInt(req.params.id);
-    const admin = (req as any).admin;
-    
-    OrderService.verifyPayment(paymentId, admin.id);
-    
-    // Log audit
-    db.prepare(`
-      INSERT INTO audit_log (admin_user_id, action, entity_type, entity_id, details, ip_address)
-      VALUES (?, 'VERIFY_PAYMENT', 'payment', ?, ?, ?)
-    `).run(admin.id, paymentId, JSON.stringify({ verifiedBy: admin.username }), req.ip);
-    
-    res.json({ 
-      success: true, 
-      message: 'Payment verified successfully' 
-    });
-  } catch (error: any) {
-    console.error('Error verifying payment:', error);
-    res.status(400).json({ error: error.message || 'Failed to verify payment' });
-  }
-});
-
-/**
- * GET /admin/sites
- * List all published sites
- */
-router.get('/sites', requireAuth, (req: Request, res: Response) => {
-  try {
-    const sites = db.prepare(`
-      SELECT 
-        s.id, s.slug, s.is_online as isOnline, s.published_at as publishedAt,
-        o.id as orderId,
-        c.email, c.groom_name as groomName, c.bride_name as brideName,
-        t.name as templateName
-      FROM sites s
-      JOIN orders o ON s.order_id = o.id
-      JOIN customers c ON o.customer_id = c.id
-      JOIN templates t ON s.template_id = t.id
-      WHERE s.published_at IS NOT NULL
-      ORDER BY s.published_at DESC
-    `).all();
-    
-    res.json({ sites });
-  } catch (error: any) {
-    console.error('Error fetching sites:', error);
-    res.status(500).json({ error: 'Failed to fetch sites' });
-  }
-});
-
-/**
- * POST /admin/sites/:id/toggle-online
- * Take a site offline or bring it back online
- */
-router.post('/sites/:id/toggle-online', requireAuth, (req: Request, res: Response) => {
-  try {
-    const siteId = parseInt(req.params.id);
-    const admin = (req as any).admin;
-    
-    const site = db.prepare(`
-      SELECT id, is_online FROM sites WHERE id = ?
-    `).get(siteId) as any;
-    
-    if (!site) {
-      return res.status(404).json({ error: 'Site not found' });
-    }
-    
-    const newStatus = !site.is_online;
-    
-    db.prepare(`
-      UPDATE sites SET is_online = ? WHERE id = ?
-    `).run(newStatus ? 1 : 0, siteId);
-    
-    // Log audit
-    db.prepare(`
-      INSERT INTO audit_log (admin_user_id, action, entity_type, entity_id, details, ip_address)
-      VALUES (?, ?, 'site', ?, ?, ?)
-    `).run(
-      admin.id,
-      newStatus ? 'SITE_ONLINE' : 'SITE_OFFLINE',
-      siteId,
-      JSON.stringify({ newStatus }),
-      req.ip
-    );
-    
-    res.json({ 
-      success: true, 
-      isOnline: newStatus,
-      message: newStatus ? 'Site is now online' : 'Site taken offline'
-    });
-  } catch (error: any) {
-    console.error('Error toggling site status:', error);
-    res.status(500).json({ error: 'Failed to update site status' });
-  }
-});
-
-/**
- * GET /admin/stats
- * Dashboard statistics
- */
-router.get('/stats', requireAuth, (req: Request, res: Response) => {
-  try {
-    const stats = {
-      orders: db.prepare(`
-        SELECT 
-          COUNT(*) as total,
-          SUM(CASE WHEN state = 'DRAFT' THEN 1 ELSE 0 END) as draft,
-          SUM(CASE WHEN state = 'PREBOOKED' THEN 1 ELSE 0 END) as prebooked,
-          SUM(CASE WHEN state = 'PURCHASED' THEN 1 ELSE 0 END) as purchased,
-          SUM(CASE WHEN state = 'PUBLISHED' THEN 1 ELSE 0 END) as published
-        FROM orders
-      `).get(),
-      payments: db.prepare(`
-        SELECT 
-          COUNT(*) as total,
-          SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) as pending,
-          SUM(CASE WHEN status = 'VERIFIED' THEN 1 ELSE 0 END) as verified
-        FROM payments
-      `).get(),
-      revenue: db.prepare(`
-        SELECT 
-          SUM(amount_paise) as totalPaise
-        FROM payments
-        WHERE status = 'VERIFIED'
-      `).get(),
-      templates: db.prepare(`
-        SELECT 
-          COUNT(*) as total,
-          SUM(CASE WHEN status = 'AVAILABLE' THEN 1 ELSE 0 END) as available,
-          SUM(CASE WHEN status = 'RESERVED' THEN 1 ELSE 0 END) as reserved,
-          SUM(CASE WHEN status = 'SOLD' THEN 1 ELSE 0 END) as sold
-        FROM templates
-      `).get()
-    };
-    
-    const revenue = stats.revenue as any;
-    const totalRevenue = revenue?.totalPaise ? revenue.totalPaise / 100 : 0;
-    
     res.json({
-      ...stats,
-      revenue: {
-        totalRupees: totalRevenue
-      }
+      success: true,
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     });
-  } catch (error: any) {
-    console.error('Error fetching stats:', error);
-    res.status(500).json({ error: 'Failed to fetch statistics' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PUT /api/admin/users/:id
+ * Update user role or subscription tier
+ */
+router.put('/users/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { role, subscriptionTier, name } = req.body;
+
+    const data: any = {};
+    if (role) data.role = role;
+    if (subscriptionTier) data.subscriptionTier = subscriptionTier;
+    if (name) data.name = name;
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        subscriptionTier: true,
+        updatedAt: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'User updated successfully',
+      user: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/admin/invitations
+ * Search and filter all invitations across the platform
+ */
+router.get('/invitations', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const search = (req.query.search as string) || '';
+    const category = (req.query.category as string) || '';
+    const status = (req.query.status as string) || '';
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (search.trim()) {
+      where.OR = [
+        { title: { contains: search.trim(), mode: 'insensitive' } },
+        { slug: { contains: search.trim(), mode: 'insensitive' } },
+        { user: { email: { contains: search.trim(), mode: 'insensitive' } } },
+        { user: { name: { contains: search.trim(), mode: 'insensitive' } } },
+      ];
+    }
+    if (category && category !== 'all') {
+      where.eventType = category;
+    }
+    if (status === 'published') {
+      where.isPublished = true;
+    } else if (status === 'draft') {
+      where.isPublished = false;
+    } else if (status === 'live') {
+      where.isLive = true;
+    }
+
+    const [invitations, total] = await Promise.all([
+      prisma.invitation.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          eventType: true,
+          isPublished: true,
+          isLive: true,
+          createdAt: true,
+          updatedAt: true,
+          user: { select: { id: true, name: true, email: true } },
+          theme: { select: { id: true, name: true, slug: true, category: true } },
+          _count: { select: { events: true, guests: true } },
+        },
+      }),
+      prisma.invitation.count({ where }),
+    ]);
+
+    res.json({
+      success: true,
+      invitations,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PUT /api/admin/invitations/:id/toggle-status
+ * Toggle isPublished or isLive for any invitation
+ */
+router.put('/invitations/:id/toggle-status', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { field, value } = req.body;
+
+    if (field !== 'isPublished' && field !== 'isLive') {
+      return res.status(400).json({ error: 'Invalid field. Must be isPublished or isLive' });
+    }
+
+    const updated = await prisma.invitation.update({
+      where: { id },
+      data: {
+        [field]: Boolean(value),
+        ...(field === 'isPublished' && value ? { publishedAt: new Date() } : {}),
+      },
+      select: {
+        id: true,
+        title: true,
+        isPublished: true,
+        isLive: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Invitation ${field} updated`,
+      invitation: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/admin/invitations/:id
+ * Delete invitation and cascading records
+ */
+router.delete('/invitations/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    await prisma.invitation.delete({
+      where: { id },
+    });
+
+    res.json({
+      success: true,
+      message: 'Invitation deleted successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/admin/themes
+ * List all themes with usage statistics
+ */
+router.get('/themes', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const category = (req.query.category as string) || '';
+    const search = (req.query.search as string) || '';
+
+    const where: any = {};
+    if (category && category !== 'all') {
+      where.category = category;
+    }
+    if (search.trim()) {
+      where.OR = [
+        { name: { contains: search.trim(), mode: 'insensitive' } },
+        { slug: { contains: search.trim(), mode: 'insensitive' } },
+      ];
+    }
+
+    const themes = await prisma.theme.findMany({
+      where,
+      orderBy: [{ category: 'asc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        category: true,
+        description: true,
+        priceTier: true,
+        priceAmount: true,
+        isActive: true,
+        isFeatured: true,
+        createdAt: true,
+        _count: { select: { invitations: true } },
+      },
+    });
+
+    res.json({
+      success: true,
+      themes,
+      total: themes.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PUT /api/admin/themes/:id/toggle-active
+ * Toggle theme active state
+ */
+router.put('/themes/:id/toggle-active', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    const updated = await prisma.theme.update({
+      where: { id },
+      data: { isActive: Boolean(isActive) },
+      select: { id: true, name: true, isActive: true },
+    });
+
+    res.json({
+      success: true,
+      message: `Theme ${updated.isActive ? 'activated' : 'deactivated'}`,
+      theme: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================================================
+// TEMPLATE IMPORT & EXPORT SPECIFICATION
+// ============================================================================
+
+const themeManifestSchema = z.object({
+  name: z.string().min(2, 'Template name must be at least 2 characters').max(100),
+  slug: z.string().min(2).max(100).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
+  category: z.enum([
+    'wedding',
+    'birthday',
+    'anniversary',
+    'baby_shower',
+    'housewarming',
+    'party',
+    'religious',
+    'family_celebration',
+    'other',
+  ], { errorMap: () => ({ message: 'Invalid category. Must be one of: wedding, birthday, anniversary, baby_shower, housewarming, party, religious, family_celebration, other' }) }),
+  description: z.string().max(500).optional().default(''),
+  tags: z.array(z.string()).optional().default([]),
+  templateComponent: z.string().min(2, 'Template component archetype is required'),
+  previewImageUrl: z.string().optional().default('/templates/default-preview.jpg'),
+  previewUrl: z.string().optional(),
+  defaultColors: z.record(z.any()).optional().default({}),
+  defaultFonts: z.record(z.any()).optional().default({}),
+  features: z.array(z.string()).optional().default(['animated_gate', 'audio_player', 'interactive_rsvp']),
+  priceTier: z.enum(['free', 'premium']).optional().default('premium'),
+  priceAmount: z.number().int().nonnegative().optional().default(49900),
+  currency: z.string().optional().default('INR'),
+  isActive: z.boolean().optional().default(true),
+  isFeatured: z.boolean().optional().default(false),
+});
+
+/**
+ * POST /api/admin/themes/import
+ * Import single or multiple templates via JSON manifest
+ */
+router.post('/themes/import', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let rawTemplates: any[] = [];
+
+    if (Array.isArray(req.body)) {
+      rawTemplates = req.body;
+    } else if (req.body.templates && Array.isArray(req.body.templates)) {
+      rawTemplates = req.body.templates;
+    } else if (typeof req.body === 'object' && req.body !== null) {
+      rawTemplates = [req.body];
+    } else {
+      return res.status(400).json({
+        error: 'Invalid format',
+        message: 'Request body must be a template object or an array of template objects',
+      });
+    }
+
+    if (rawTemplates.length === 0) {
+      return res.status(400).json({ error: 'No templates provided in payload' });
+    }
+
+    const importedResults: any[] = [];
+    const validationErrors: { index: number; name?: string; errors: string[] }[] = [];
+
+    for (let i = 0; i < rawTemplates.length; i++) {
+      const item = rawTemplates[i];
+      const parseResult = themeManifestSchema.safeParse(item);
+
+      if (!parseResult.success) {
+        validationErrors.push({
+          index: i + 1,
+          name: item.name || `Template #${i + 1}`,
+          errors: parseResult.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
+        });
+        continue;
+      }
+
+      const valid = parseResult.data;
+
+      // Upsert into PostgreSQL database
+      const theme = await prisma.theme.upsert({
+        where: { slug: valid.slug },
+        update: {
+          name: valid.name,
+          category: valid.category,
+          description: valid.description,
+          tags: valid.tags,
+          templateComponent: valid.templateComponent,
+          previewImageUrl: valid.previewImageUrl,
+          previewUrl: valid.previewUrl || `/templates/${valid.slug}/preview`,
+          defaultColors: valid.defaultColors,
+          defaultFonts: valid.defaultFonts,
+          features: valid.features,
+          priceTier: valid.priceTier,
+          priceAmount: valid.priceAmount,
+          currency: valid.currency,
+          isActive: valid.isActive,
+          isFeatured: valid.isFeatured,
+          updatedAt: new Date(),
+        },
+        create: {
+          name: valid.name,
+          slug: valid.slug,
+          category: valid.category,
+          description: valid.description,
+          tags: valid.tags,
+          templateComponent: valid.templateComponent,
+          previewImageUrl: valid.previewImageUrl,
+          previewUrl: valid.previewUrl || `/templates/${valid.slug}/preview`,
+          defaultColors: valid.defaultColors,
+          defaultFonts: valid.defaultFonts,
+          features: valid.features,
+          priceTier: valid.priceTier,
+          priceAmount: valid.priceAmount,
+          currency: valid.currency,
+          isActive: valid.isActive,
+          isFeatured: valid.isFeatured,
+        },
+      });
+
+      importedResults.push(theme);
+    }
+
+    if (validationErrors.length > 0 && importedResults.length === 0) {
+      return res.status(422).json({
+        error: 'Validation failed',
+        message: 'Failed to import templates due to validation errors',
+        validationErrors,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully imported ${importedResults.length} template(s)${
+        validationErrors.length > 0 ? ` (${validationErrors.length} skipped due to errors)` : ''
+      }`,
+      importedCount: importedResults.length,
+      themes: importedResults,
+      validationErrors: validationErrors.length > 0 ? validationErrors : undefined,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/admin/themes
+ * Create a single new template manually from admin form
+ */
+router.post('/themes', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parseResult = themeManifestSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        errors: parseResult.error.errors.map((e) => e.message),
+      });
+    }
+
+    const valid = parseResult.data;
+
+    // Check slug collision
+    const existing = await prisma.theme.findUnique({
+      where: { slug: valid.slug },
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        error: 'Conflict',
+        message: `A template with slug "${valid.slug}" already exists. Please choose a different slug.`,
+      });
+    }
+
+    const created = await prisma.theme.create({
+      data: {
+        name: valid.name,
+        slug: valid.slug,
+        category: valid.category,
+        description: valid.description,
+        tags: valid.tags,
+        templateComponent: valid.templateComponent,
+        previewImageUrl: valid.previewImageUrl,
+        previewUrl: valid.previewUrl || `/templates/${valid.slug}/preview`,
+        defaultColors: valid.defaultColors,
+        defaultFonts: valid.defaultFonts,
+        features: valid.features,
+        priceTier: valid.priceTier,
+        priceAmount: valid.priceAmount,
+        currency: valid.currency,
+        isActive: valid.isActive,
+        isFeatured: valid.isFeatured,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Template created successfully',
+      theme: created,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/admin/themes/:id/export
+ * Export theme specification as standardized JSON manifest
+ */
+router.get('/themes/:id/export', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const theme = await prisma.theme.findUnique({
+      where: { id },
+    });
+
+    if (!theme) {
+      return res.status(404).json({ error: 'Theme not found' });
+    }
+
+    const manifest = {
+      name: theme.name,
+      slug: theme.slug,
+      category: theme.category,
+      description: theme.description || '',
+      tags: theme.tags || [],
+      templateComponent: theme.templateComponent,
+      previewImageUrl: theme.previewImageUrl,
+      previewUrl: theme.previewUrl,
+      defaultColors: theme.defaultColors || {},
+      defaultFonts: theme.defaultFonts || {},
+      features: theme.features || [],
+      priceTier: theme.priceTier,
+      priceAmount: theme.priceAmount,
+      currency: theme.currency,
+      isActive: theme.isActive,
+      isFeatured: theme.isFeatured,
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="template-${theme.slug}.json"`);
+    res.json(manifest);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/admin/themes/:id
+ * Remove template if not actively used by host invitations
+ */
+router.delete('/themes/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const theme = await prisma.theme.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: { invitations: true },
+        },
+      },
+    });
+
+    if (!theme) {
+      return res.status(404).json({ error: 'Theme not found' });
+    }
+
+    if (theme._count.invitations > 0) {
+      return res.status(400).json({
+        error: 'Cannot delete active theme',
+        message: `This theme is currently used in ${theme._count.invitations} celebration invitation(s). Please deactivate it instead of deleting.`,
+      });
+    }
+
+    await prisma.theme.delete({
+      where: { id },
+    });
+
+    res.json({
+      success: true,
+      message: `Theme "${theme.name}" deleted successfully`,
+    });
+  } catch (error) {
+    next(error);
   }
 });
 

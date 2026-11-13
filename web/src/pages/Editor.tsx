@@ -7,7 +7,6 @@ export default function Editor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [site, setSite] = useState<any>(null);
-  const [schema, setSchema] = useState<any>(null);
   const [order, setOrder] = useState<any>(null);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState<any>({});
@@ -22,7 +21,7 @@ export default function Editor() {
     try {
       const response = await axios.get(`/api/edit/${token}/site`);
       setSite(response.data.site);
-      setSchema(response.data.schema);
+      // Schema available in response.data.schema if needed
       setOrder(response.data.order);
       setFormData(response.data.site.data);
       setSlug(response.data.site.slug || '');

@@ -1,9 +1,21 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminProtectedRoute } from './components/AdminProtectedRoute';
+import Home from './pages/Home';
 import Landing from './pages/Landing';
+import TemplateGallery from './pages/TemplateGallery';
+import TemplatePreview from './pages/TemplatePreview';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Dashboard from './pages/Dashboard';
+import CreateInvitation from './pages/CreateInvitation';
+import InvitationEditor from './pages/InvitationEditor';
 import Editor from './pages/Editor';
 import PublishedSite from './pages/PublishedSite';
 import AdminLogin from './pages/admin/Login';
 import AdminDashboard from './pages/admin/Dashboard';
+import PublicInvitationView from './pages/PublicInvitationView';
 
 declare global {
   interface Window {
@@ -26,15 +38,65 @@ function App() {
   
   // Main app routing
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/edit/:token" element={<Editor />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/*" element={<AdminDashboard />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/old-landing" element={<Landing />} />
+          <Route path="/templates" element={<TemplateGallery />} />
+          <Route path="/templates/:slug" element={<TemplatePreview />} />
+          <Route path="/templates/:slug/preview" element={<TemplatePreview />} />
+          <Route path="/templates/:slug/use" element={<TemplatePreview />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/invitations/new"
+            element={
+              <ProtectedRoute>
+                <CreateInvitation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/invitations/:id/edit"
+            element={
+              <ProtectedRoute>
+                <InvitationEditor />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/invitations/:id"
+            element={
+              <ProtectedRoute>
+                <InvitationEditor />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/i/:slug" element={<PublicInvitationView />} />
+          <Route path="/invites/:slug" element={<PublicInvitationView />} />
+          <Route path="/edit/:token" element={<Editor />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route
+            path="/admin/*"
+            element={
+              <AdminProtectedRoute>
+                <AdminDashboard />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
