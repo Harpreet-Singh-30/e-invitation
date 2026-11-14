@@ -155,3 +155,4 @@ export async function deleteMedia(filename: string, folder = 'invitations'): Pro
     return false;
   }
 }
+

@@ -19,7 +19,20 @@ import publicInvitationRoutes from './routes/publicInvitations';
 const app = express();
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
+
+// Parse configured origins or default to localhost + vercel
+const envOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const isOriginAllowed = (origin: string | undefined): boolean => {
+  if (!origin) return true; // Server-to-server or non-browser requests
+  if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) return true;
+  if (origin.endsWith('.vercel.app') || origin === 'https://vercel.app') return true;
+  if (envOrigins.includes(origin)) return true;
+  return false;
+};
 
 // ============================================================================
 // DATABASE CONNECTION TEST
@@ -48,14 +61,23 @@ app.use(
   })
 );
 
-app.use(
-  cors({
-    origin: CORS_ORIGIN,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS] Blocked request from origin: ${origin}`);
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Set-Cookie'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // ============================================================================
 // BODY PARSING
@@ -274,7 +296,7 @@ app.listen(PORT, () => {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log(`✅ Server:      http://localhost:${PORT}`);
   console.log(`✅ Environment: ${NODE_ENV}`);
-  console.log(`✅ CORS:        ${CORS_ORIGIN}`);
+  console.log(`✅ CORS:        ${envOrigins.join(', ') || 'localhost + *.vercel.app'}`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('📋 API Endpoints:');
   console.log('   POST /api/auth/signup          - Create account');
