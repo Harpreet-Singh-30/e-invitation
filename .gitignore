@@ -67,3 +67,7 @@ coverage/
 # Design source zips
 invitation-design-assets/
 *.zip
+
+# Vercel
+.vercel/
+.vercelignore
