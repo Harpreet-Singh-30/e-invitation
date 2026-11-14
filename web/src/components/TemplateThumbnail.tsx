@@ -5,6 +5,23 @@ import { DEMO_DATA } from '../pages/TemplatePreview';
 interface TemplateThumbnailProps {
   slug: string;
   name: string;
+  templateComponent?: string;
+  defaultColors?: {
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+    background?: string;
+    surface?: string;
+    text?: string;
+  };
+  defaultFonts?: {
+    heading?: string;
+    body?: string;
+    accent?: string;
+  };
+  category?: string;
+  description?: string;
+  previewImageUrl?: string;
 }
 
 // Sample data for thumbnail previews
@@ -408,45 +425,137 @@ const THUMBNAIL_DATA: Record<string, any> = {
   }
 };
 
-const TemplateThumbnail = memo(({ slug, name }: TemplateThumbnailProps) => {
-  const templateDef = resolveTemplate(slug);
-  const TemplateComponent = templateDef?.component;
-  const data = THUMBNAIL_DATA[slug] || DEMO_DATA[slug] || (templateDef ? THUMBNAIL_DATA[templateDef.slug] || DEMO_DATA[templateDef.slug] : null);
+const TemplateThumbnail = memo(({
+  slug,
+  name,
+  templateComponent,
+  defaultColors,
+  defaultFonts,
+  category = 'wedding',
+  description,
+}: TemplateThumbnailProps) => {
+  // 1. Resolve archetype: try slug, then templateComponent, then category match
+  const templateDef =
+    resolveTemplate(slug) ||
+    (templateComponent ? resolveTemplate(templateComponent) : null) ||
+    resolveTemplate('imperial-burgundy');
 
-  if (!TemplateComponent || !data) {
-    // Fallback to gradient placeholder
+  const TemplateComponent = templateDef?.component;
+  const baseData =
+    THUMBNAIL_DATA[slug] ||
+    (templateDef ? THUMBNAIL_DATA[templateDef.slug] : null) ||
+    DEMO_DATA[slug];
+
+  const isCustomTheme = !THUMBNAIL_DATA[slug] && !DEMO_DATA[slug];
+
+  // Clean name for display: e.g. "Moonlit Jasmine & Peacock Palace" -> groom: "Moonlit Jasmine", bride: "Peacock Palace"
+  const cleanName = name.replace(/\b(template|theme|suite)\b/gi, '').trim();
+  const nameParts = cleanName.includes('&') ? cleanName.split('&') : [cleanName, ''];
+  const groom = nameParts[0]?.trim() || cleanName;
+  const bride = nameParts[1]?.trim() || (category === 'wedding' ? 'Royal Celebration' : '');
+
+  const thumbnailData = {
+    ...(baseData || {}),
+    title: name,
+    couple: {
+      groom: isCustomTheme ? groom : (baseData?.couple?.groom || groom),
+      bride: isCustomTheme ? bride : (baseData?.couple?.bride || bride),
+      tagline: isCustomTheme
+        ? (description || 'Two Souls, One Sacred Journey')
+        : (baseData?.couple?.tagline || description || 'Two Souls, One Sacred Journey'),
+    },
+    events:
+      baseData?.events && baseData.events.length > 0 && !isCustomTheme
+        ? baseData.events
+        : [
+            {
+              key: 'main-event',
+              title: name,
+              name: name,
+              date: '2027-11-20',
+              eventDate: '2027-11-20',
+              time: '6:30 PM',
+              startTime: '6:30 PM',
+              venue: 'The Grand Heritage Pavilion',
+              venueName: 'The Grand Heritage Pavilion',
+              address: 'Palace Grounds, Jaipur',
+              venueAddress: 'Palace Grounds, Jaipur',
+              description: description || 'Ceremony & Grand Feast',
+            },
+          ],
+    message: description || baseData?.message || 'Join us in celebrating this auspicious occasion.',
+    defaultColors,
+    defaultFonts,
+    _isThumbnail: true,
+    music: { enabled: false },
+    options: { ...(baseData?.options || {}), intro: false },
+  };
+
+  if (!TemplateComponent) {
+    const primary = defaultColors?.primary || '#7A1C30';
+    const accent = defaultColors?.accent || '#D4AF37';
+    const bg = defaultColors?.background || '#0B0F19';
     return (
-      <div className="relative h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-        <div className="absolute inset-0 bg-gradient-to-br from-rose-400/20 to-purple-400/20"></div>
-        <div className="relative z-10 text-center p-8">
-          <div className="text-6xl mb-4">💒</div>
-          <h3 className="text-2xl font-serif font-bold text-gray-800">{name}</h3>
+      <div
+        className="relative h-full flex flex-col items-center justify-center p-6 text-center select-none"
+        style={{ backgroundColor: bg, color: defaultColors?.text || '#FFFFFF' }}
+      >
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-3 shadow-lg border"
+          style={{ backgroundColor: primary, borderColor: accent }}
+        >
+          ✨
+        </div>
+        <h4 className="font-serif font-bold text-lg mb-1 leading-snug line-clamp-1" style={{ color: accent }}>
+          {name}
+        </h4>
+        <p className="text-xs opacity-70 line-clamp-2">{description || 'Bespoke Celebration Suite'}</p>
+        <div className="flex gap-1.5 mt-3">
+          <span className="w-3.5 h-3.5 rounded-full border border-white/20" style={{ backgroundColor: primary }} />
+          <span className="w-3.5 h-3.5 rounded-full border border-white/20" style={{ backgroundColor: accent }} />
+          {defaultColors?.secondary && (
+            <span
+              className="w-3.5 h-3.5 rounded-full border border-white/20"
+              style={{ backgroundColor: defaultColors.secondary }}
+            />
+          )}
         </div>
       </div>
     );
   }
 
-  const thumbnailData = {
-    ...data,
-    _isThumbnail: true,
-    music: { enabled: false },
-    options: { ...(data.options || {}), intro: false },
+  // Dynamic CSS variables so custom palette is applied to the archetype
+  const customStyles: React.CSSProperties = {
+    transform: 'scale(0.3)',
+    transformOrigin: 'top left',
+    width: '333%',
+    height: '333%',
+    isolation: 'isolate',
+    ...(defaultColors?.primary
+      ? {
+          '--burg': defaultColors.primary,
+          '--primary': defaultColors.primary,
+          '--wine': defaultColors.secondary || defaultColors.accent || defaultColors.primary,
+          '--gold': defaultColors.accent || '#D4AF37',
+          '--accent': defaultColors.accent || '#D4AF37',
+          '--deep': defaultColors.background || '#060A17',
+          '--background': defaultColors.background || '#060A17',
+          '--ivory': defaultColors.text || '#FAF7F0',
+          '--cream': defaultColors.surface || '#0F1A3A',
+          '--serif': defaultFonts?.heading ? `'${defaultFonts.heading}', serif` : undefined,
+          '--cinzel': defaultFonts?.heading ? `'${defaultFonts.heading}', serif` : undefined,
+        }
+      : {}),
   };
 
   return (
-    <div 
+    <div
       className="relative h-full overflow-hidden pointer-events-none ih-thumbnail-wrapper"
       aria-hidden="true"
       tabIndex={-1}
-      style={{
-        transform: 'scale(0.3)',
-        transformOrigin: 'top left',
-        width: '333%',
-        height: '333%',
-        isolation: 'isolate',
-      }}
+      style={customStyles}
     >
-      <div 
+      <div
         className="absolute inset-0"
         style={{
           pointerEvents: 'none',
@@ -455,7 +564,6 @@ const TemplateThumbnail = memo(({ slug, name }: TemplateThumbnailProps) => {
       >
         <TemplateComponent data={thumbnailData} />
       </div>
-      {/* Overlay to prevent interaction */}
       <div className="absolute inset-0 bg-transparent" style={{ pointerEvents: 'none' }} />
     </div>
   );

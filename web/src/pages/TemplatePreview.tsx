@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { resolveTemplate } from '../templates/registry';
+import { resolveTemplate, registerThemeInCatalog } from '../templates/registry';
 import { useAuth } from '../contexts/AuthContext';
 import MobilePhoneMockup from '../components/MobilePhoneMockup';
+import api from '../lib/api';
 
 export const DEMO_DATA: Record<string, any> = {
   'art-deco-noir': {
@@ -1670,8 +1671,69 @@ export default function TemplatePreview() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [dbTheme, setDbTheme] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const templateDef = resolveTemplate(slug);
+  // Fetch dynamic theme details from API if available
+  useEffect(() => {
+    let isMounted = true;
+    if (!slug) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    api
+      .get(`/api/public/themes/${slug}`)
+      .then((res) => {
+        if (!isMounted) return;
+        if (res.data?.theme) {
+          registerThemeInCatalog(res.data.theme);
+          setDbTheme(res.data.theme);
+        }
+      })
+      .catch(() => {
+        // Fallback: search all public themes in case slug matches an ID or alias
+        return api
+          .get('/api/public/themes')
+          .then((res) => {
+            if (!isMounted) return;
+            const themes = res.data?.themes;
+            if (Array.isArray(themes)) {
+              themes.forEach((t: any) => registerThemeInCatalog(t));
+              const found = themes.find((t: any) => t.slug === slug || t.id === slug);
+              if (found) {
+                setDbTheme(found);
+              }
+            }
+          })
+          .catch(() => {});
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [slug]);
+
+  const templateDef =
+    (slug ? resolveTemplate(slug) : null) ||
+    (dbTheme?.templateComponent ? resolveTemplate(dbTheme.templateComponent) : null) ||
+    (dbTheme?.category ? resolveTemplate(dbTheme.category) : null) ||
+    (!loading ? resolveTemplate('imperial-burgundy') : null);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 font-medium">Loading bespoke preview...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!slug || !templateDef) {
     return (
@@ -1687,23 +1749,78 @@ export default function TemplatePreview() {
   }
 
   const TemplateComponent = templateDef.component;
-  const demoData = DEMO_DATA[templateDef.slug] || DEMO_DATA[slug] || {
-    couple: { groom: templateDef.name, bride: '', tagline: templateDef.description },
-    events: [{ key: 'event-1', title: templateDef.name, date: '2027-08-15', time: '6:30 PM', venue: 'Grand Celebration Hall', address: 'Main Avenue' }],
-    message: templateDef.description
-  };
-  const templateInfo = TEMPLATE_INFO[templateDef.slug] || {
-    name: templateDef.name,
-    description: templateDef.description,
-    category: templateDef.category,
-    themeId: templateDef.themeId,
+
+  // Personalize demo data if viewing a custom database theme
+  const cleanName = (dbTheme?.name || templateDef.name).replace(/\b(template|theme|suite)\b/gi, '').trim();
+  const nameParts = cleanName.includes('&') ? cleanName.split('&') : [cleanName, ''];
+  const groom = nameParts[0]?.trim() || 'Kabir';
+  const bride = nameParts[1]?.trim() || (dbTheme?.category === 'wedding' || templateDef.category === 'wedding' ? 'Meera' : '');
+
+  const customThemeDemo = dbTheme
+    ? {
+        couple: {
+          groom,
+          bride,
+          tagline: dbTheme.description || 'Together with their families request the pleasure of your company',
+        },
+        events: [
+          {
+            key: 'main-celebration',
+            title: dbTheme.category === 'wedding' ? 'The Royal Wedding Ceremony & Reception' : dbTheme.name,
+            date: '2027-11-20',
+            time: '6:30 PM Onwards',
+            venue: 'The Grand Heritage Pavilion',
+            address: 'Palace Grounds, Jaipur',
+            description: dbTheme.description || 'Join us for cocktails, dinner, and dancing under the stars.',
+          },
+          {
+            key: 'welcome-evening',
+            title: 'Welcome Sangeet & Cocktails',
+            date: '2027-11-19',
+            time: '7:30 PM',
+            venue: 'The Courtyard',
+            address: 'Palace Grounds, Jaipur',
+            description: 'An evening of music, dance, and traditional banquet.',
+          },
+        ],
+        message: dbTheme.description || 'We look forward to celebrating this special milestone with you.',
+        themeColors: dbTheme.defaultColors,
+        defaultColors: dbTheme.defaultColors,
+        defaultFonts: dbTheme.defaultFonts,
+      }
+    : null;
+
+  const demoData =
+    customThemeDemo ||
+    DEMO_DATA[templateDef.slug] ||
+    DEMO_DATA[slug] || {
+      couple: { groom: templateDef.name, bride: '', tagline: templateDef.description },
+      events: [
+        {
+          key: 'event-1',
+          title: templateDef.name,
+          date: '2027-08-15',
+          time: '6:30 PM',
+          venue: 'Grand Celebration Hall',
+          address: 'Main Avenue',
+        },
+      ],
+      message: templateDef.description,
+    };
+
+  const staticInfo = TEMPLATE_INFO[templateDef.slug] || TEMPLATE_INFO[slug || ''];
+  const templateInfo = {
+    name: dbTheme?.name || staticInfo?.name || templateDef.name,
+    description: dbTheme?.description || staticInfo?.description || templateDef.description,
+    category: dbTheme?.category || staticInfo?.category || templateDef.category,
+    themeId: dbTheme?.id || staticInfo?.themeId || templateDef.themeId,
   };
 
   const handleUseTemplate = () => {
     // Store selected template in sessionStorage for use after auth / on create
-    sessionStorage.setItem('selectedTemplate', slug);
+    sessionStorage.setItem('selectedTemplate', slug || templateDef.slug);
     sessionStorage.setItem('selectedOccasion', templateInfo.category);
-    sessionStorage.setItem('selectedThemeId', templateInfo.themeId);
+    sessionStorage.setItem('selectedThemeId', templateInfo.themeId || slug);
     if (isAuthenticated) {
       navigate('/invitations/new');
     } else {
@@ -1717,6 +1834,27 @@ export default function TemplatePreview() {
       handleUseTemplate();
     }
   }, [slug, templateDef, isAuthenticated]);
+
+  // Dynamic CSS variables so custom palette is applied to the archetype
+  const dynamicPreviewStyles: React.CSSProperties = {
+    isolation: 'isolate',
+    transform: 'translateZ(0)',
+    ...(dbTheme?.defaultColors?.primary
+      ? {
+          '--burg': dbTheme.defaultColors.primary,
+          '--primary': dbTheme.defaultColors.primary,
+          '--wine': dbTheme.defaultColors.secondary || dbTheme.defaultColors.accent || dbTheme.defaultColors.primary,
+          '--gold': dbTheme.defaultColors.accent || '#D4AF37',
+          '--accent': dbTheme.defaultColors.accent || '#D4AF37',
+          '--deep': dbTheme.defaultColors.background || '#060A17',
+          '--background': dbTheme.defaultColors.background || '#060A17',
+          '--ivory': dbTheme.defaultColors.text || '#FAF7F0',
+          '--cream': dbTheme.defaultColors.surface || '#0F1A3A',
+          '--serif': dbTheme.defaultFonts?.heading ? `'${dbTheme.defaultFonts.heading}', serif` : undefined,
+          '--cinzel': dbTheme.defaultFonts?.heading ? `'${dbTheme.defaultFonts.heading}', serif` : undefined,
+        }
+      : {}),
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -1785,14 +1923,16 @@ export default function TemplatePreview() {
           {viewMode === 'mobile' ? (
             <div className="w-full flex justify-center">
               <MobilePhoneMockup height={760} className="template-preview-container">
-                <TemplateComponent data={demoData} />
+                <div style={dynamicPreviewStyles}>
+                  <TemplateComponent data={demoData} />
+                </div>
               </MobilePhoneMockup>
             </div>
           ) : (
             <div className="w-full">
-              <div 
+              <div
                 className="bg-white shadow-2xl overflow-hidden relative transform-gpu template-preview-container rounded-xl"
-                style={{ isolation: 'isolate', transform: 'translateZ(0)' }}
+                style={dynamicPreviewStyles}
               >
                 <TemplateComponent data={demoData} />
               </div>

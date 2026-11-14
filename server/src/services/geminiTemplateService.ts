@@ -180,7 +180,7 @@ Return a JSON object matching this schema:
     "colorPaletteRecommendation": ["Hex codes and color names, e.g. '#600020 (Imperial Maroon)', '#D4AF37 (Antique Gold)'"],
     "typographyStyle": "Font pairing recommendation (e.g. 'Cinzel / Cormorant Garamond / Great Vibes')",
     "ornamentationNotes": "Specific motifs, divider styles, and borders (e.g. 'Jali archways, floral borders, gold foil hairlines')",
-    "recommendedArchetype": "One of: ImperialBurgundyTemplate, BotanicalRomanceTemplate, ArtDecoNoirTemplate, PhulkariCelebrationTemplate, CoastalPearlTemplate, CelestialLullabyTemplate, HearthHeritageTemplate, MidnightSoireeTemplate, AuraGrandGalaTemplate"
+    "recommendedArchetype": "Select the best matching archetype from: ImperialBurgundyTemplate (Royal Indian Palace, Wax Seal, Mandalas, Velvet & Gold), MidnightVowsTemplate (Starlight, Moonlit Navy, Dark Plum, Celestial Elegance), BotanicalRomanceTemplate (Garden, Floral, Romantic Pastels), MarigoldCourtyardTemplate (Festive Haldi, Sangeet, Marigold, Terracotta), IvoryKayalTemplate (South Indian, Temple, Jasmine & Ivory Gold), PhulkariCelebrationTemplate (Punjabi, Vibrant Sangeet, Embroidery), CoastalPearlTemplate (Beach, Coastal, Waves), ArtDecoNoirTemplate (Gatsby, Black & Gold, Geometric), GoldenMilestoneTemplate (Birthday, Glamour), CelestialLullabyTemplate (Baby Shower), HearthHeritageTemplate (Housewarming), MidnightSoireeTemplate (Party, Neon), DivyaMandapTemplate (Puja, Sacred), HeritageReunionTemplate (Family Reunion), AuraGrandGalaTemplate (Black-Tie Gala Honors)"
   }
 }`;
 
@@ -212,7 +212,7 @@ Generate a complete, fully functional, production-ready InviteHub theme manifest
   "slug": "url-safe-kebab-case-slug (e.g. 'royal-udaipur-lake-palace')",
   "category": "${category}",
   "description": "Engaging 1-2 sentence description highlighting the ambiance, aesthetic elements, and style of this invitation.",
-  "templateComponent": "One of: ImperialBurgundyTemplate, BotanicalRomanceTemplate, ArtDecoNoirTemplate, PhulkariCelebrationTemplate, CoastalPearlTemplate, CelestialLullabyTemplate, HearthHeritageTemplate, MidnightSoireeTemplate, AuraGrandGalaTemplate",
+  "templateComponent": "Must be one of the concrete React archetypes: ImperialBurgundyTemplate, MidnightVowsTemplate, BotanicalRomanceTemplate, MarigoldCourtyardTemplate, IvoryKayalTemplate, PhulkariCelebrationTemplate, CoastalPearlTemplate, ArtDecoNoirTemplate, GoldenMilestoneTemplate, SilverJubileeTemplate, CelestialLullabyTemplate, HearthHeritageTemplate, MidnightSoireeTemplate, DivyaMandapTemplate, HeritageReunionTemplate, AuraGrandGalaTemplate (For wedding themes, choose between ImperialBurgundyTemplate, MidnightVowsTemplate, BotanicalRomanceTemplate, MarigoldCourtyardTemplate, IvoryKayalTemplate, PhulkariCelebrationTemplate, CoastalPearlTemplate, or ArtDecoNoirTemplate)",
   "tags": ["relevant", "search", "tags", "maximum 6"],
   "priceTier": "premium",
   "priceAmount": 49900,

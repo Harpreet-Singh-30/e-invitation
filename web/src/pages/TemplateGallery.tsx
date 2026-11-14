@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import TemplateThumbnail from '../components/TemplateThumbnail';
 import { useAuth } from '../contexts/AuthContext';
+import { registerThemeInCatalog } from '../templates/registry';
 import api from '../lib/api';
 
 interface Template {
@@ -16,6 +17,8 @@ interface Template {
   isFeatured: boolean;
   templateComponent: string;
   themeId?: string; // Database Theme ID
+  defaultColors?: any;
+  defaultFonts?: any;
 }
 
 const OCCASION_FILTERS = [
@@ -673,6 +676,9 @@ export default function TemplateGallery() {
     api.get('/api/public/themes')
       .then((res) => {
         if (res.data?.themes && Array.isArray(res.data.themes)) {
+          // Register dynamic database themes into the template catalog registry
+          res.data.themes.forEach((t: any) => registerThemeInCatalog(t));
+
           const mapped: Template[] = res.data.themes.map((t: any) => ({
             id: t.slug,
             name: t.name,
@@ -683,8 +689,10 @@ export default function TemplateGallery() {
             priceTier: t.priceTier || 'premium',
             priceAmount: t.priceAmount || 49900,
             isFeatured: Boolean(t.isFeatured),
-            templateComponent: t.templateComponent || 'ArtDecoNoirTemplate',
+            templateComponent: t.templateComponent || 'ImperialBurgundyTemplate',
             themeId: t.id,
+            defaultColors: t.defaultColors,
+            defaultFonts: t.defaultFonts,
           }));
           setDbTemplates(mapped);
         }
@@ -905,7 +913,16 @@ export default function TemplateGallery() {
               >
                 {/* Real Template Thumbnail */}
                 <div className="relative h-64 overflow-hidden bg-white">
-                  <TemplateThumbnail slug={template.slug} name={template.name} />
+                  <TemplateThumbnail
+                    slug={template.slug}
+                    name={template.name}
+                    templateComponent={template.templateComponent}
+                    defaultColors={template.defaultColors}
+                    defaultFonts={template.defaultFonts}
+                    category={template.category}
+                    description={template.description}
+                    previewImageUrl={template.previewImageUrl}
+                  />
                   {template.isFeatured && (
                     <div className="absolute top-4 right-4 bg-rose-500 text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
                       Featured

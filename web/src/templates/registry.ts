@@ -630,8 +630,57 @@ export function resolveTemplate(identifier?: string | null): TemplateDefinition 
     };
   }
 
+  // Normalized search across TEMPLATE_COMPONENTS
+  if (norm) {
+    for (const [k, comp] of Object.entries(TEMPLATE_COMPONENTS)) {
+      if (normalizeIdentifier(k) === norm) {
+        return {
+          id: k,
+          slug: k,
+          componentName: k,
+          themeId: k,
+          name: k,
+          category: 'wedding',
+          description: 'Imported interactive template archetype',
+          component: comp,
+        };
+      }
+    }
+  }
+
   // 5. Default safe fallback
-  return TEMPLATE_DEFINITIONS['botanical-romance'] || null;
+  return TEMPLATE_DEFINITIONS['imperial-burgundy'] || TEMPLATE_DEFINITIONS['botanical-romance'] || null;
+}
+
+/**
+ * Register dynamic themes fetched from database so resolveTemplate() can find them immediately
+ */
+export function registerThemeInCatalog(theme: {
+  slug: string;
+  name: string;
+  templateComponent?: string;
+  category?: string;
+  description?: string;
+  defaultColors?: any;
+  defaultFonts?: any;
+  themeId?: string;
+}) {
+  if (!theme || !theme.slug) return;
+  const comp =
+    (theme.templateComponent && TEMPLATE_COMPONENTS[theme.templateComponent]) ||
+    (theme.templateComponent && TEMPLATE_DEFINITIONS[theme.templateComponent]?.component) ||
+    ImperialBurgundy;
+
+  TEMPLATE_DEFINITIONS[theme.slug] = {
+    id: theme.slug,
+    slug: theme.slug,
+    componentName: theme.templateComponent || 'ImperialBurgundyTemplate',
+    themeId: theme.themeId || theme.slug,
+    name: theme.name,
+    category: theme.category || 'wedding',
+    description: theme.description || '',
+    component: comp,
+  };
 }
 
 /**
@@ -654,14 +703,24 @@ export const TEMPLATE_COMPONENTS: Record<string, React.ComponentType<{ data: any
   'ivory-kayal': IvoryKayal,
   'marigold-courtyard': MarigoldCourtyard,
   'midnight-vows': MidnightVows,
+  'golden-milestone': GoldenMilestone,
+  'silver-jubilee': SilverJubilee,
+  'celestial-lullaby': CelestialLullaby,
+  'hearth-heritage': HearthHeritage,
+  'midnight-soiree': MidnightSoiree,
+  'divya-mandap': DivyaMandap,
+  'heritage-reunion': HeritageReunion,
+  'aura-grand-gala': AuraGrandGala,
 
-  // Legacy mappings upgraded to Claude components
+  // Legacy mappings upgraded to modern components
   'royal-maroon': ImperialBurgundy,
   'modern-floral': BotanicalRomance,
   'classic-gold': ArtDecoNoir,
+  'birthday-joy': GoldenMilestone,
   'RoyalMaroonTemplate': ImperialBurgundy,
   'ModernFloralTemplate': BotanicalRomance,
   'ClassicGoldTemplate': ArtDecoNoir,
+  'BirthdayJoyTemplate': GoldenMilestone,
   'royal-maroon-01': ImperialBurgundy,
   'modern-floral-02': BotanicalRomance,
   'classic-gold-03': ArtDecoNoir,
@@ -675,4 +734,44 @@ export const TEMPLATE_COMPONENTS: Record<string, React.ComponentType<{ data: any
   'IvoryKayalTemplate': IvoryKayal,
   'MarigoldCourtyardTemplate': MarigoldCourtyard,
   'MidnightVowsTemplate': MidnightVows,
+  'GoldenMilestoneTemplate': GoldenMilestone,
+  'SilverJubileeTemplate': SilverJubilee,
+  'CelestialLullabyTemplate': CelestialLullaby,
+  'HearthHeritageTemplate': HearthHeritage,
+  'MidnightSoireeTemplate': MidnightSoiree,
+  'DivyaMandapTemplate': DivyaMandap,
+  'HeritageReunionTemplate': HeritageReunion,
+  'AuraGrandGalaTemplate': AuraGrandGala,
+  'RetroSynthArcadeTemplate': Catalog.RetroSynthArcade,
+  'EnchantedStorybookBirthdayTemplate': Catalog.EnchantedStorybookBirthday,
+  'SafariWildOneTemplate': Catalog.SafariWildOne,
+  'VintageDistilleryMilestoneTemplate': Catalog.VintageDistilleryMilestone,
+  'GoldenJubilee50thTemplate': Catalog.GoldenJubilee50th,
+  'RubyRomance40thTemplate': Catalog.RubyRomance40th,
+  'BohoSunsetVowsTemplate': Catalog.BohoSunsetVows,
+  'MonochromeFilmNoirAnniversaryTemplate': Catalog.MonochromeFilmNoirAnniversary,
+  'WoodlandFableShowerTemplate': Catalog.WoodlandFableShower,
+  'RoyalLittlePrincePrincessTemplate': Catalog.RoyalLittlePrincePrincess,
+  'SunshineMeadowShowerTemplate': Catalog.SunshineMeadowShower,
+  'BohoRainbowMiracleTemplate': Catalog.BohoRainbowMiracle,
+  'ScandiMinimalHavenTemplate': Catalog.ScandiMinimalHaven,
+  'RajasthaniJharokhaGrihaTemplate': Catalog.RajasthaniJharokhaGriha,
+  'UrbanTerraceSoireeTemplate': Catalog.UrbanTerraceSoiree,
+  'CoastalBreezeHomeTemplate': Catalog.CoastalBreezeHome,
+  'TropicalSunsetLuauTemplate': Catalog.TropicalSunsetLuau,
+  'Studio54DiscoGlamTemplate': Catalog.Studio54DiscoGlam,
+  'SpeakeasyRoaringTwentiesTemplate': Catalog.SpeakeasyRoaringTwenties,
+  'PoolsideSunDrenchedBashTemplate': Catalog.PoolsideSunDrenchedBash,
+  'ShreeGaneshVandanaTemplate': Catalog.ShreeGaneshVandana,
+  'WaheguruAnandBlessingsTemplate': Catalog.WaheguruAnandBlessings,
+  'CathedralGraceCommunionTemplate': Catalog.CathedralGraceCommunion,
+  'NoorEMehfilNikahEidTemplate': Catalog.NoorEMehfilNikahEid,
+  'VintageRootsFamilyArchiveTemplate': Catalog.VintageRootsFamilyArchive,
+  'SunlitPicnicCarnivalTemplate': Catalog.SunlitPicnicCarnival,
+  'FestiveDiwaliFamilyMilanTemplate': Catalog.FestiveDiwaliFamilyMilan,
+  'GenerationsAnchoredReunionTemplate': Catalog.GenerationsAnchoredReunion,
+  'CommencementExcellenceTemplate': Catalog.CommencementExcellence,
+  'PhilanthropyCrystalBallTemplate': Catalog.PhilanthropyCrystalBall,
+  'TechSummitFutureVisionTemplate': Catalog.TechSummitFutureVision,
+  'BonVoyageWanderlustTemplate': Catalog.BonVoyageWanderlust,
 };

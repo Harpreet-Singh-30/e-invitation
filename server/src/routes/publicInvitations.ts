@@ -137,5 +137,37 @@ router.get('/themes', async (req: Request, res: Response, next: NextFunction) =>
   }
 });
 
+/**
+ * GET /api/public/themes/:slug
+ * Returns a specific public theme by slug or id
+ */
+router.get('/themes/:slug', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { slug } = req.params;
+
+    const theme = await prisma.theme.findFirst({
+      where: {
+        OR: [
+          { slug },
+          { id: slug },
+        ],
+        isActive: true,
+      },
+    });
+
+    if (!theme) {
+      return res.status(404).json({ error: 'Theme not found' });
+    }
+
+    res.json({
+      success: true,
+      theme,
+    });
+  } catch (error) {
+    console.error('Error fetching theme by slug:', error);
+    next(error);
+  }
+});
+
 export default router;
 
