@@ -31,6 +31,8 @@ model User {
   themePurchases      ThemePurchase[]
   
   @@index([email])
+  @@index([role])
+  @@index([subscriptionTier])
   @@map("users")
 }
 
@@ -67,6 +69,7 @@ model Invitation {
   @@index([slug])
   @@index([eventType])
   @@index([isLive])
+  @@index([isPublished])
   @@map("invitations")
 }
 

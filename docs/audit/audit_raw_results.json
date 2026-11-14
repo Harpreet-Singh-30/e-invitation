@@ -1,0 +1,231 @@
+{
+  "pages": [
+    {
+      "name": "Home",
+      "route": "/",
+      "viewport": "Desktop (1280x800)",
+      "status": 200,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [],
+      "screenshot": "Home_1280.png"
+    },
+    {
+      "name": "Home",
+      "route": "/",
+      "viewport": "Tablet (768x1024)",
+      "status": 304,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [],
+      "screenshot": "Home_768.png"
+    },
+    {
+      "name": "Home",
+      "route": "/",
+      "viewport": "Mobile (375x667)",
+      "status": 304,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [],
+      "screenshot": "Home_375.png"
+    },
+    {
+      "name": "Template_Gallery",
+      "route": "/templates",
+      "viewport": "Desktop (1280x800)",
+      "status": 200,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [
+        "20 form controls missing labels"
+      ],
+      "screenshot": "Template_Gallery_1280.png"
+    },
+    {
+      "name": "Template_Gallery",
+      "route": "/templates",
+      "viewport": "Tablet (768x1024)",
+      "status": 304,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [
+        "20 form controls missing labels"
+      ],
+      "screenshot": "Template_Gallery_768.png"
+    },
+    {
+      "name": "Template_Gallery",
+      "route": "/templates",
+      "viewport": "Mobile (375x667)",
+      "status": 304,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [
+        "20 form controls missing labels"
+      ],
+      "screenshot": "Template_Gallery_375.png"
+    },
+    {
+      "name": "Login",
+      "route": "/login",
+      "viewport": "Desktop (1280x800)",
+      "status": 200,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [],
+      "screenshot": "Login_1280.png"
+    },
+    {
+      "name": "Login",
+      "route": "/login",
+      "viewport": "Tablet (768x1024)",
+      "status": 304,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [],
+      "screenshot": "Login_768.png"
+    },
+    {
+      "name": "Login",
+      "route": "/login",
+      "viewport": "Mobile (375x667)",
+      "status": 304,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [],
+      "screenshot": "Login_375.png"
+    },
+    {
+      "name": "Signup",
+      "route": "/signup",
+      "viewport": "Desktop (1280x800)",
+      "status": 200,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [],
+      "screenshot": "Signup_1280.png"
+    },
+    {
+      "name": "Signup",
+      "route": "/signup",
+      "viewport": "Tablet (768x1024)",
+      "status": 304,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [],
+      "screenshot": "Signup_768.png"
+    },
+    {
+      "name": "Signup",
+      "route": "/signup",
+      "viewport": "Mobile (375x667)",
+      "status": 304,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [],
+      "screenshot": "Signup_375.png"
+    },
+    {
+      "name": "Admin_Login",
+      "route": "/admin/login",
+      "viewport": "Desktop (1280x800)",
+      "status": 200,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [],
+      "screenshot": "Admin_Login_1280.png"
+    },
+    {
+      "name": "Admin_Login",
+      "route": "/admin/login",
+      "viewport": "Tablet (768x1024)",
+      "status": 304,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [],
+      "screenshot": "Admin_Login_768.png"
+    },
+    {
+      "name": "Admin_Login",
+      "route": "/admin/login",
+      "viewport": "Mobile (375x667)",
+      "status": 304,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [],
+      "screenshot": "Admin_Login_375.png"
+    },
+    {
+      "name": "404_Page",
+      "route": "/nonexistent-path-test-404",
+      "viewport": "Desktop (1280x800)",
+      "status": 200,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [],
+      "screenshot": "404_Page_1280.png"
+    },
+    {
+      "name": "404_Page",
+      "route": "/nonexistent-path-test-404",
+      "viewport": "Tablet (768x1024)",
+      "status": 304,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [],
+      "screenshot": "404_Page_768.png"
+    },
+    {
+      "name": "404_Page",
+      "route": "/nonexistent-path-test-404",
+      "viewport": "Mobile (375x667)",
+      "status": 304,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [],
+      "screenshot": "404_Page_375.png"
+    },
+    {
+      "name": "Published_Invitation_Sample",
+      "route": "/i/new",
+      "viewport": "Desktop (1280x800)",
+      "status": 200,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [
+        "No <h1> heading present on page"
+      ],
+      "screenshot": "Published_Invitation_Sample_1280.png"
+    },
+    {
+      "name": "Published_Invitation_Sample",
+      "route": "/i/new",
+      "viewport": "Tablet (768x1024)",
+      "status": 304,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [
+        "No <h1> heading present on page"
+      ],
+      "screenshot": "Published_Invitation_Sample_768.png"
+    },
+    {
+      "name": "Published_Invitation_Sample",
+      "route": "/i/new",
+      "viewport": "Mobile (375x667)",
+      "status": 304,
+      "title": "InviteHub - Luxury Online Wedding & Celebration Websites",
+      "horizontalOverflow": false,
+      "a11yIssues": [
+        "No <h1> heading present on page"
+      ],
+      "screenshot": "Published_Invitation_Sample_375.png"
+    }
+  ],
+  "consoleErrors": [],
+  "networkFailures": [],
+  "a11yIssues": [],
+  "responsiveChecks": [],
+  "flows": {}
+}

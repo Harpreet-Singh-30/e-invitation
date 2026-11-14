@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminProtectedRoute } from './components/AdminProtectedRoute';
@@ -81,6 +81,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/i/new" element={<Navigate to="/invitations/new" replace />} />
           <Route path="/i/:slug" element={<PublicInvitationView />} />
           <Route path="/invites/:slug" element={<PublicInvitationView />} />
           <Route path="/edit/:token" element={<Editor />} />

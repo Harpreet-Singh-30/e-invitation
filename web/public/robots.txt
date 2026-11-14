@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Allow: /templates
+Allow: /templates/*
+Allow: /i/*
+Disallow: /dashboard
+Disallow: /invitations/*
+Disallow: /admin/*
+Disallow: /admin/login
+Disallow: /login
+Disallow: /signup
+
+Sitemap: https://e-invitation-rosy.vercel.app/sitemap.xml
+

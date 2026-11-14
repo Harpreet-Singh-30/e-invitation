@@ -436,6 +436,8 @@ const TemplateThumbnail = memo(({ slug, name }: TemplateThumbnailProps) => {
   return (
     <div 
       className="relative h-full overflow-hidden pointer-events-none ih-thumbnail-wrapper"
+      aria-hidden="true"
+      tabIndex={-1}
       style={{
         transform: 'scale(0.3)',
         transformOrigin: 'top left',

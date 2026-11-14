@@ -71,8 +71,10 @@ export default function Home() {
 
             {/* Mobile menu button */}
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100"
+              aria-label="Toggle navigation menu"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {mobileMenuOpen ? (

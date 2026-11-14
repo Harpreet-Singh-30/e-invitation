@@ -25,6 +25,15 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    sourcemap: false
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-motion': ['framer-motion'],
+          'vendor-utils': ['axios', 'date-fns', 'zustand'],
+        },
+      },
+    },
   }
 })

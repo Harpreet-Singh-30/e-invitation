@@ -44,7 +44,7 @@ export default function AdminLogin() {
   const handleFillDemoAdmin = () => {
     setFormData({
       email: 'admin@wedding-saas.com',
-      password: 'Admin123!',
+      password: 'admin123',
     });
     setError('');
   };
@@ -58,9 +58,9 @@ export default function AdminLogin() {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 to-rose-600 shadow-[0_0_40px_rgba(245,158,11,0.3)] mb-4 border border-amber-300/30">
           <span className="text-3xl">🛡️</span>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
           InviteHub Master Admin
-        </h2>
+        </h1>
         <p className="mt-2 text-sm text-slate-400">
           Centralized management console for platform operations
         </p>

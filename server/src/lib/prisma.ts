@@ -7,7 +7,7 @@ import { PrismaClient } from '@prisma/client';
  * In development, prevents hot-reload from creating multiple instances
  */
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+const globalForPrisma = (globalThis as any) as { prisma: PrismaClient };
 
 export const prisma =
   globalForPrisma.prisma ||
@@ -17,9 +17,8 @@ export const prisma =
       : ['error'],
   });
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
-}
+// Retain singleton across serverless invocations to prevent connection pool exhaustion
+globalForPrisma.prisma = prisma;
 
 /**
  * Graceful shutdown - disconnect on process termination

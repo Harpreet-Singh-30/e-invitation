@@ -146,7 +146,10 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
       if (theme && theme.isActive) {
         resolvedThemeId = theme.id;
       } else {
-        console.warn(`[Invitations] Theme '${themeId}' not found or inactive. Proceeding without theme.`);
+        return res.status(400).json({
+          error: 'Invalid theme',
+          message: `Theme '${themeId}' was not found or is currently inactive. Please choose a valid theme.`,
+        });
       }
     }
 

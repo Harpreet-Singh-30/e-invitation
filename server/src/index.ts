@@ -42,13 +42,15 @@ async function testDatabaseConnection() {
   try {
     await prisma.$connect();
     console.log('✅ Database connected successfully');
-  } catch (error) {
-    console.error('❌ Database connection failed:', error);
-    process.exit(1);
+  } catch (error: any) {
+    console.warn('⚠️ Initial database connection check note:', error?.message || error);
+    // Do not crash server, allow Prisma to connect on first request
   }
 }
 
-testDatabaseConnection();
+if (!process.env.VERCEL && NODE_ENV !== 'production') {
+  testDatabaseConnection();
+}
 
 // ============================================================================
 // SECURITY MIDDLEWARE
@@ -67,7 +69,7 @@ const corsOptions: cors.CorsOptions = {
       callback(null, true);
     } else {
       console.warn(`[CORS] Blocked request from origin: ${origin}`);
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
+      callback(null, false);
     }
   },
   credentials: true,
@@ -259,6 +261,13 @@ app.use((req: Request, res: Response) => {
 // Global error handler
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error('❌ Unhandled error:', err);
+
+  // Ensure CORS headers are sent on error responses so client receives actual error details
+  const origin = req.headers.origin;
+  if (origin && isOriginAllowed(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
 
   // Prisma errors
   if (err.constructor.name.includes('Prisma')) {

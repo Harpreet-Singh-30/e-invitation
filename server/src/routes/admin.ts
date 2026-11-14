@@ -2,6 +2,11 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { requireAuth, requireRole } from '../middleware/auth';
+import {
+  refineAdminPrompt,
+  generateTemplateFromRefinedPrompt,
+  adjustTemplateWithFeedback,
+} from '../services/geminiTemplateService';
 
 const router = Router();
 
@@ -705,6 +710,106 @@ router.delete('/themes/:id', async (req: Request, res: Response, next: NextFunct
     });
   } catch (error) {
     next(error);
+  }
+});
+
+// ============================================================================
+// GEMINI AI TEMPLATE STUDIO ROUTES
+// ============================================================================
+
+/**
+ * POST /api/admin/ai/refine-prompt
+ * Takes raw admin prompt, enriches and refines it with Gemini AI
+ */
+router.post('/ai/refine-prompt', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { prompt, category = 'wedding' } = req.body;
+    if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
+      return res.status(400).json({ error: 'Prompt is required' });
+    }
+
+    const result = await refineAdminPrompt(prompt.trim(), category);
+    res.json({
+      success: true,
+      refinedPrompt: result.refinedPrompt,
+      creativeDirection: result.creativeDirection,
+    });
+  } catch (error: any) {
+    console.error('[AI Refine Error]', error);
+    res.status(500).json({
+      error: 'AI Refine Failed',
+      message: error.message || 'Failed to refine prompt with Gemini AI',
+    });
+  }
+});
+
+/**
+ * POST /api/admin/ai/generate-template
+ * Runs prompt refinement (if needed) and generates complete template manifest
+ */
+router.post('/ai/generate-template', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { prompt, refinedPrompt: existingRefined, category = 'wedding' } = req.body;
+    if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
+      return res.status(400).json({ error: 'Prompt is required' });
+    }
+
+    let refinedPrompt = existingRefined;
+    let creativeDirection: any = null;
+
+    if (!refinedPrompt) {
+      const refineRes = await refineAdminPrompt(prompt.trim(), category);
+      refinedPrompt = refineRes.refinedPrompt;
+      creativeDirection = refineRes.creativeDirection;
+    }
+
+    const result = await generateTemplateFromRefinedPrompt(
+      refinedPrompt,
+      category,
+      prompt.trim()
+    );
+
+    res.json({
+      success: true,
+      template: result.template,
+      refinedPrompt,
+      creativeDirection,
+    });
+  } catch (error: any) {
+    console.error('[AI Generate Error]', error);
+    res.status(500).json({
+      error: 'AI Generation Failed',
+      message: error.message || 'Failed to generate template with Gemini AI',
+    });
+  }
+});
+
+/**
+ * POST /api/admin/ai/adjust-template
+ * Adjusts an existing template manifest according to admin feedback
+ */
+router.post('/ai/adjust-template', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { currentTemplate, feedback } = req.body;
+    if (!currentTemplate || typeof currentTemplate !== 'object') {
+      return res.status(400).json({ error: 'Current template manifest is required' });
+    }
+    if (!feedback || typeof feedback !== 'string' || !feedback.trim()) {
+      return res.status(400).json({ error: 'Feedback / adjustment instructions are required' });
+    }
+
+    const result = await adjustTemplateWithFeedback(currentTemplate, feedback.trim());
+    res.json({
+      success: true,
+      updatedTemplate: result.updatedTemplate,
+      changesSummary: result.changesSummary,
+    });
+  } catch (error: any) {
+    console.error('[AI Adjust Error]', error);
+    res.status(500).json({
+      error: 'AI Adjustment Failed',
+      message: error.message || 'Failed to adjust template with Gemini AI',
+    });
   }
 });
 

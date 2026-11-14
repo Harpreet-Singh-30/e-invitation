@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="roseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f43f5e" />
+      <stop offset="100%" stop-color="#be123c" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#roseGrad)" />
+  <!-- Invitation Envelope / Heart icon -->
+  <path d="M14 20C14 17.7909 15.7909 16 18 16H46C48.2091 16 50 17.7909 50 20V44C50 46.2091 48.2091 48 46 48H18C15.7909 48 14 46.2091 14 44V20Z" fill="white" fill-opacity="0.15" stroke="white" stroke-width="2.5" />
+  <path d="M14 20L32 34L50 20" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Golden Seal Sparkle -->
+  <circle cx="32" cy="34" r="5" fill="url(#goldGrad)" stroke="white" stroke-width="1.5" />
+</svg>
+
