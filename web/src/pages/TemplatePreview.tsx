@@ -1724,6 +1724,33 @@ export default function TemplatePreview() {
     (dbTheme?.category ? resolveTemplate(dbTheme.category) : null) ||
     (!loading ? resolveTemplate('imperial-burgundy') : null);
 
+  const staticInfo = templateDef ? TEMPLATE_INFO[templateDef.slug] || TEMPLATE_INFO[slug || ''] : null;
+  const templateInfo = {
+    name: dbTheme?.name || staticInfo?.name || templateDef?.name || slug || '',
+    description: dbTheme?.description || staticInfo?.description || templateDef?.description || '',
+    category: dbTheme?.category || staticInfo?.category || templateDef?.category || 'wedding',
+    themeId: dbTheme?.id || staticInfo?.themeId || templateDef?.themeId || slug || '',
+  };
+
+  const handleUseTemplate = () => {
+    // Store selected template in sessionStorage for use after auth / on create
+    sessionStorage.setItem('selectedTemplate', slug || templateDef?.slug || '');
+    sessionStorage.setItem('selectedOccasion', templateInfo.category);
+    sessionStorage.setItem('selectedThemeId', templateInfo.themeId || slug || '');
+    if (isAuthenticated) {
+      navigate('/invitations/new');
+    } else {
+      navigate('/signup');
+    }
+  };
+
+  // If accessed directly via /templates/:slug/use, trigger invitation flow
+  useEffect(() => {
+    if (window.location.pathname.endsWith('/use') && slug && templateDef) {
+      handleUseTemplate();
+    }
+  }, [slug, templateDef, isAuthenticated]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -1807,33 +1834,6 @@ export default function TemplatePreview() {
       ],
       message: templateDef.description,
     };
-
-  const staticInfo = TEMPLATE_INFO[templateDef.slug] || TEMPLATE_INFO[slug || ''];
-  const templateInfo = {
-    name: dbTheme?.name || staticInfo?.name || templateDef.name,
-    description: dbTheme?.description || staticInfo?.description || templateDef.description,
-    category: dbTheme?.category || staticInfo?.category || templateDef.category,
-    themeId: dbTheme?.id || staticInfo?.themeId || templateDef.themeId,
-  };
-
-  const handleUseTemplate = () => {
-    // Store selected template in sessionStorage for use after auth / on create
-    sessionStorage.setItem('selectedTemplate', slug || templateDef.slug);
-    sessionStorage.setItem('selectedOccasion', templateInfo.category);
-    sessionStorage.setItem('selectedThemeId', templateInfo.themeId || slug);
-    if (isAuthenticated) {
-      navigate('/invitations/new');
-    } else {
-      navigate('/signup');
-    }
-  };
-
-  // If accessed directly via /templates/:slug/use, trigger invitation flow
-  useEffect(() => {
-    if (window.location.pathname.endsWith('/use') && slug && templateDef) {
-      handleUseTemplate();
-    }
-  }, [slug, templateDef, isAuthenticated]);
 
   // Dynamic CSS variables so custom palette is applied to the archetype
   const dynamicPreviewStyles: React.CSSProperties = {

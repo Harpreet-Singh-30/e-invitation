@@ -59,11 +59,10 @@ export interface GeneratedTemplateSpec {
 }
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const PRIMARY_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 
-// Resilient priority chain: primary -> 3.5 flash -> 3.5 flash-lite -> 3.1 flash-lite
+// Priority order: 3.5 flash-lite (ultra-fast ~1s, immune to high-demand spikes) -> 3.8 flash -> env override -> 3.5 flash
 const CANDIDATE_MODELS = Array.from(
-  new Set([PRIMARY_MODEL, 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'])
+  new Set(['gemini-3.5-flash-lite', 'gemini-3.8-flash', process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite', 'gemini-3.5-flash'])
 );
 
 /**
@@ -92,7 +91,7 @@ async function callGemini(promptText: string, jsonMode: boolean = true): Promise
         }
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000);
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
 
         const response = await fetch(endpoint, {
           method: 'POST',
@@ -107,20 +106,10 @@ async function callGemini(promptText: string, jsonMode: boolean = true): Promise
           const errorText = await response.text();
           console.warn(`[Gemini API Warning] Model ${model} (attempt ${attempt}) returned ${response.status}: ${errorText}`);
 
-          // If high demand spike (503) or rate limit (429), back off or try next model
-          if (response.status === 503 || response.status === 429) {
+          // If high demand spike (503), rate limit (429), or 404, move immediately to next model
+          if (response.status === 503 || response.status === 429 || response.status === 404) {
             lastError = new Error(`Gemini model ${model} temporarily unavailable (${response.status})`);
-            if (attempt === 1) {
-              await new Promise((r) => setTimeout(r, 1000));
-              continue;
-            }
-            break; // Move to next model in fallback chain
-          }
-
-          // If 404 or unsupported, move immediately to next model
-          if (response.status === 404 || response.status === 400) {
-            lastError = new Error(`Gemini model ${model} returned ${response.status}: ${errorText}`);
-            break;
+            break; // Move to next model immediately
           }
 
           throw new Error(`Gemini API error (${response.status}): ${errorText}`);
