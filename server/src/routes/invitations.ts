@@ -1,7 +1,34 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import multer from 'multer';
 import { prisma } from '../lib/prisma';
 import { requireAuth } from '../middleware/auth';
+import { uploadMedia, deleteMedia } from '../lib/storage';
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 15 * 1024 * 1024, // 15MB max file size
+  },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+      'image/svg+xml',
+      'audio/mpeg',
+      'audio/wav',
+      'audio/mp3',
+      'audio/ogg',
+    ];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`File type ${file.mimetype} is not supported`));
+    }
+  },
+});
 
 const router = Router();
 
@@ -632,6 +659,155 @@ router.post('/:id/pay', requireAuth, async (req: Request, res: Response, next: N
     });
   } catch (error) {
     console.error('Payment processing error:', error);
+    next(error);
+  }
+});
+
+// ============================================================================
+// MEDIA ASSETS (Cloud Storage / Local Fallback)
+// ============================================================================
+
+/**
+ * POST /api/invitations/:id/media
+ * Upload photos, cover banners, or background audio to Cloud Storage
+ */
+router.post('/:id/media', requireAuth, upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const { id } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No media file provided' });
+    }
+
+    // Verify invitation ownership
+    const invitation = await prisma.invitation.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    });
+
+    if (!invitation) {
+      return res.status(404).json({ error: 'Invitation not found or unauthorized' });
+    }
+
+    // Upload to cloud storage (or local fallback)
+    const mediaType = req.body.type || (req.file.mimetype.startsWith('audio/') ? 'audio' : 'photo');
+    const uploadResult = await uploadMedia({
+      buffer: req.file.buffer,
+      originalFilename: req.file.originalname,
+      mimeType: req.file.mimetype,
+      folder: `invitations/${id}`,
+    });
+
+    // Save asset record in database
+    const asset = await prisma.mediaAsset.create({
+      data: {
+        invitationId: id,
+        type: mediaType,
+        filename: uploadResult.filename,
+        originalFilename: req.file.originalname,
+        url: uploadResult.url,
+        fileSize: uploadResult.size,
+        mimeType: uploadResult.mimeType,
+        caption: req.body.caption || null,
+        altText: req.body.altText || req.file.originalname,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Media uploaded successfully',
+      provider: uploadResult.provider,
+      asset: {
+        id: asset.id,
+        url: asset.url,
+        filename: asset.filename,
+        originalFilename: asset.originalFilename,
+        type: asset.type,
+        mimeType: asset.mimeType,
+        size: asset.fileSize,
+        caption: asset.caption,
+        uploadedAt: asset.uploadedAt,
+      },
+    });
+  } catch (error) {
+    console.error('Media upload error:', error);
+    next(error);
+  }
+});
+
+/**
+ * GET /api/invitations/:id/media
+ * List all uploaded media assets for this invitation
+ */
+router.get('/:id/media', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const { id } = req.params;
+
+    const invitation = await prisma.invitation.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    });
+
+    if (!invitation) {
+      return res.status(404).json({ error: 'Invitation not found' });
+    }
+
+    const assets = await prisma.mediaAsset.findMany({
+      where: { invitationId: id },
+      orderBy: [{ orderIndex: 'asc' }, { uploadedAt: 'desc' }],
+    });
+
+    res.json({
+      success: true,
+      count: assets.length,
+      assets,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/invitations/:id/media/:mediaId
+ * Delete a media asset from storage and database
+ */
+router.delete('/:id/media/:mediaId', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const { id, mediaId } = req.params;
+
+    const invitation = await prisma.invitation.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    });
+
+    if (!invitation) {
+      return res.status(404).json({ error: 'Invitation not found' });
+    }
+
+    const asset = await prisma.mediaAsset.findFirst({
+      where: { id: mediaId, invitationId: id },
+    });
+
+    if (!asset) {
+      return res.status(404).json({ error: 'Media asset not found' });
+    }
+
+    // Remove from storage
+    await deleteMedia(asset.filename, `invitations/${id}`);
+
+    // Remove from database
+    await prisma.mediaAsset.delete({
+      where: { id: mediaId },
+    });
+
+    res.json({
+      success: true,
+      message: 'Media asset deleted successfully',
+    });
+  } catch (error) {
     next(error);
   }
 });
