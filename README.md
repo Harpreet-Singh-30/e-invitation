@@ -1,5 +1,11 @@
 # InviteHub — Premium Multi-Occasion Digital Invitation Platform
 
+> 🚀 **Production Status**: Live on Vercel  
+> 🌐 **Web App**: [https://e-invitation-rosy.vercel.app](https://e-invitation-rosy.vercel.app)  
+> ⚡ **API**: [https://e-invitation-api-chi.vercel.app](https://e-invitation-api-chi.vercel.app)  
+> 🛡️ **Admin Dashboard**: [https://e-invitation-rosy.vercel.app/admin/dashboard](https://e-invitation-rosy.vercel.app/admin/dashboard) (Credentials: `admin@wedding-saas.com` / `admin123`)  
+> 📖 **Master Guide**: See [PROJECT_STATUS_AND_FLOW.md](./PROJECT_STATUS_AND_FLOW.md) for full flow diagrams and architecture
+
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React%2018-20232A?style=flat-square&logo=react&logoColor=61DAFB)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite%205-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
@@ -9,18 +15,19 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 
-InviteHub is a full-stack, enterprise-grade SaaS platform for authoring, customizing, monetizing, and publishing bespoke digital event invitation websites. The platform supports **9 occasion categories** with **50+ designer templates**, rich interactive entrance gates, ambient audio players, multi-device previews, simulated payment checkout, and an executive administration console.
+InviteHub is a full-stack, enterprise-grade SaaS platform for authoring, customizing, monetizing, and publishing bespoke digital event invitation websites. The platform supports **9 occasion categories** with **50+ designer templates**, rich interactive entrance gates, ambient audio players, multi-device previews, simulated payment checkout, an executive administration console, and an autonomous **Gemini AI Template Studio**.
 
 ---
 
 ## 📑 Table of Contents
-1. [Tech Stack & Architecture](#-tech-stack--architecture)
-2. [Step-by-Step Local Setup Guide](#-step-by-step-local-setup-guide)
-3. [Default Credentials & Test Accounts](#-default-credentials--test-accounts)
-4. [What We Have Achieved](#-what-we-have-achieved)
-5. [Template Import Specification](#-template-import-specification)
-6. [Roadmap & What is Still Pending](#-roadmap--what-is-still-pending)
-7. [Repository Structure](#-repository-structure)
+1. [Master Flow & Status Documentation (PROJECT_STATUS_AND_FLOW.md)](./PROJECT_STATUS_AND_FLOW.md)
+2. [Tech Stack & Architecture](#-tech-stack--architecture)
+3. [Step-by-Step Local Setup Guide](#-step-by-step-local-setup-guide)
+4. [Default Credentials & Test Accounts](#-default-credentials--test-accounts)
+5. [What We Have Achieved](#-what-we-have-achieved)
+6. [Gemini AI Template Studio](#-gemini-ai-template-studio)
+7. [Roadmap & What is Still Pending](#-roadmap--what-is-still-pending)
+8. [Repository Structure](#-repository-structure)
 
 ---
 
