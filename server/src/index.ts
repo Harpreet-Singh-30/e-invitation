@@ -114,12 +114,16 @@ const authLimiter = rateLimit({
 // FILE UPLOADS
 // ============================================================================
 
-const UPLOADS_PATH = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
+const UPLOADS_PATH = process.env.UPLOAD_DIR || (process.env.VERCEL ? '/tmp/uploads' : path.join(process.cwd(), 'uploads'));
 
 // Create uploads directory if it doesn't exist
-if (!fs.existsSync(UPLOADS_PATH)) {
-  fs.mkdirSync(UPLOADS_PATH, { recursive: true });
-  console.log('✅ Uploads directory created');
+try {
+  if (!fs.existsSync(UPLOADS_PATH)) {
+    fs.mkdirSync(UPLOADS_PATH, { recursive: true });
+    console.log('✅ Uploads directory created');
+  }
+} catch {
+  // Read-only serverless environment
 }
 
 // Serve uploads

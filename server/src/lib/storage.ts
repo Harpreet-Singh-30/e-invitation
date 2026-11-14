@@ -17,11 +17,15 @@ export interface UploadOptions {
   folder?: string;
 }
 
-const LOCAL_UPLOADS_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
+const LOCAL_UPLOADS_DIR = process.env.UPLOAD_DIR || (process.env.VERCEL ? '/tmp/uploads' : path.join(process.cwd(), 'uploads'));
 
 // Ensure local directory exists for fallback
-if (!fs.existsSync(LOCAL_UPLOADS_DIR)) {
-  fs.mkdirSync(LOCAL_UPLOADS_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(LOCAL_UPLOADS_DIR)) {
+    fs.mkdirSync(LOCAL_UPLOADS_DIR, { recursive: true });
+  }
+} catch {
+  // Read-only serverless environment
 }
 
 /**
