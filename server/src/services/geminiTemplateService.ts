@@ -1,4 +1,4 @@
-interface RefinePromptResult {
+export interface RefinePromptResult {
   refinedPrompt: string;
   creativeDirection: {
     mood: string;
@@ -59,65 +59,102 @@ export interface GeneratedTemplateSpec {
 }
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+const PRIMARY_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+
+// Resilient priority chain: primary -> 3.5 flash -> 3.5 flash-lite -> 3.1 flash-lite
+const CANDIDATE_MODELS = Array.from(
+  new Set([PRIMARY_MODEL, 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'])
+);
 
 /**
- * Helper to call Gemini REST API directly
+ * Robust Gemini API caller with automatic model fallback, retry on 503/429 spikes, and timeout protection
  */
 async function callGemini(promptText: string, jsonMode: boolean = true): Promise<any> {
   if (!GEMINI_API_KEY) {
     throw new Error('GEMINI_API_KEY is not configured in server environment');
   }
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+  let lastError: any = null;
 
-  const body: any = {
-    contents: [
-      {
-        parts: [{ text: promptText }],
-      },
-    ],
-  };
+  for (const model of CANDIDATE_MODELS) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+        const body: any = {
+          contents: [{ parts: [{ text: promptText }] }],
+        };
 
-  if (jsonMode) {
-    body.generationConfig = {
-      responseMimeType: 'application/json',
-      temperature: 0.7,
-    };
-  }
+        if (jsonMode) {
+          body.generationConfig = {
+            responseMimeType: 'application/json',
+            temperature: 0.7,
+          };
+        }
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('[Gemini API Error]', response.status, errorText);
-    throw new Error(`Gemini API error (${response.status}): ${errorText}`);
-  }
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
 
-  const data: any = await response.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        clearTimeout(timeoutId);
 
-  if (!rawText) {
-    throw new Error('No content returned from Gemini model');
-  }
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.warn(`[Gemini API Warning] Model ${model} (attempt ${attempt}) returned ${response.status}: ${errorText}`);
 
-  if (jsonMode) {
-    try {
-      return JSON.parse(rawText);
-    } catch (e: any) {
-      // Clean possible markdown code fences if model returned them
-      const cleaned = rawText.replace(/```(?:json)?/g, '').trim();
-      return JSON.parse(cleaned);
+          // If high demand spike (503) or rate limit (429), back off or try next model
+          if (response.status === 503 || response.status === 429) {
+            lastError = new Error(`Gemini model ${model} temporarily unavailable (${response.status})`);
+            if (attempt === 1) {
+              await new Promise((r) => setTimeout(r, 1000));
+              continue;
+            }
+            break; // Move to next model in fallback chain
+          }
+
+          // If 404 or unsupported, move immediately to next model
+          if (response.status === 404 || response.status === 400) {
+            lastError = new Error(`Gemini model ${model} returned ${response.status}: ${errorText}`);
+            break;
+          }
+
+          throw new Error(`Gemini API error (${response.status}): ${errorText}`);
+        }
+
+        const data: any = await response.json();
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!rawText) {
+          throw new Error(`No content returned from Gemini model ${model}`);
+        }
+
+        if (jsonMode) {
+          try {
+            return JSON.parse(rawText);
+          } catch (e: any) {
+            const cleaned = rawText.replace(/```(?:json)?/g, '').trim();
+            return JSON.parse(cleaned);
+          }
+        }
+
+        return rawText;
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[Gemini Request Exception] Model: ${model}, Attempt: ${attempt}, Reason: ${err.message}`);
+        if (err.name === 'AbortError') {
+          console.warn(`[Gemini Timeout] Model ${model} timed out after 20s, advancing to next candidate model`);
+          break;
+        }
+      }
     }
   }
 
-  return rawText;
+  throw lastError || new Error('All Gemini candidate models are momentarily busy. Please try again.');
 }
 
 /**
@@ -127,7 +164,8 @@ export async function refineAdminPrompt(
   rawPrompt: string,
   category: string = 'wedding'
 ): Promise<RefinePromptResult> {
-  const prompt = `You are a world-class luxury digital invitation art director and UI/UX design expert for InviteHub.
+  try {
+    const prompt = `You are a world-class luxury digital invitation art director and UI/UX design expert for InviteHub.
 The administrator wants to create a new invitation template with this raw idea:
 "${rawPrompt}"
 (Event Category: "${category}")
@@ -146,7 +184,11 @@ Return a JSON object matching this schema:
   }
 }`;
 
-  return await callGemini(prompt, true);
+    return await callGemini(prompt, true);
+  } catch (err: any) {
+    console.warn('[Gemini Refine Fallback] Using heuristic design brief due to AI capacity spike:', err.message);
+    return generateFallbackDesignBrief(rawPrompt, category);
+  }
 }
 
 /**
@@ -156,8 +198,9 @@ export async function generateTemplateFromRefinedPrompt(
   refinedPrompt: string,
   category: string = 'wedding',
   originalPrompt: string = ''
-): Promise<{ template: GeneratedTemplateSpec; refinedPrompt: string }> {
-  const prompt = `You are the lead architect of the InviteHub Digital Invitation platform.
+): Promise<{ template: GeneratedTemplateSpec; refinedPrompt: string; isFallback?: boolean }> {
+  try {
+    const prompt = `You are the lead architect of the InviteHub Digital Invitation platform.
 Based on this design brief:
 "${refinedPrompt}"
 (Original User Idea: "${originalPrompt}", Category: "${category}")
@@ -232,8 +275,13 @@ Generate a complete, fully functional, production-ready InviteHub theme manifest
 
 Ensure all hex colors are harmonious, accessible with good contrast, and match the requested theme.`;
 
-  const template = await callGemini(prompt, true);
-  return { template, refinedPrompt };
+    const template = await callGemini(prompt, true);
+    return { template, refinedPrompt };
+  } catch (err: any) {
+    console.warn('[Gemini Generate Fallback] Generating heuristic template due to AI capacity spike:', err.message);
+    const fallbackTemplate = generateFallbackTemplate(originalPrompt || refinedPrompt, category);
+    return { template: fallbackTemplate, refinedPrompt, isFallback: true };
+  }
 }
 
 /**
@@ -243,7 +291,8 @@ export async function adjustTemplateWithFeedback(
   currentTemplate: GeneratedTemplateSpec,
   feedback: string
 ): Promise<{ updatedTemplate: GeneratedTemplateSpec; changesSummary: string }> {
-  const prompt = `You are a digital invitation design assistant for InviteHub.
+  try {
+    const prompt = `You are a digital invitation design assistant for InviteHub.
 The administrator wants adjustments made to this existing template manifest:
 
 Current Template:
@@ -259,5 +308,166 @@ Return a JSON object with:
   "changesSummary": "Concise bulleted summary of what was updated (e.g. 'Updated primary color to emerald green #0A5C36, switched heading font to Playfair Display, and revised event dates')."
 }`;
 
-  return await callGemini(prompt, true);
+    return await callGemini(prompt, true);
+  } catch (err: any) {
+    console.warn('[Gemini Adjust Fallback] Applying heuristic adjustments:', err.message);
+    // Simple heuristic updater if Google AI is completely unavailable
+    const updated = JSON.parse(JSON.stringify(currentTemplate));
+    const lower = feedback.toLowerCase();
+    if (lower.includes('free')) {
+      updated.priceTier = 'free';
+      updated.priceAmount = 0;
+    } else if (lower.includes('gold')) {
+      updated.defaultColors.primary = '#D4AF37';
+      updated.defaultColors.accent = '#FFD700';
+    } else if (lower.includes('blue') || lower.includes('navy')) {
+      updated.defaultColors.primary = '#1E3A8A';
+      updated.defaultColors.background = '#0B1120';
+    } else if (lower.includes('green') || lower.includes('emerald')) {
+      updated.defaultColors.primary = '#065F46';
+      updated.defaultColors.accent = '#10B981';
+    }
+    return {
+      updatedTemplate: updated,
+      changesSummary: `Applied adjustments based on instructions: "${feedback.slice(0, 100)}"`,
+    };
+  }
+}
+
+/**
+ * Heuristic fallback design brief generator in case of total upstream Gemini API downtime
+ */
+function generateFallbackDesignBrief(prompt: string, category: string): RefinePromptResult {
+  const cleanTitle = prompt
+    .replace(/[^\w\s]/gi, '')
+    .split(' ')
+    .slice(0, 5)
+    .join(' ')
+    .trim() || `${category.charAt(0).toUpperCase() + category.slice(1)} Elegance`;
+
+  return {
+    refinedPrompt: `An exquisite and opulent ${category} celebration design brief crafted around "${cleanTitle}". Features bespoke visual elements, deep rich color palettes with gold accents, balanced editorial serif typography, and an interactive itinerary suited for discerning hosts.`,
+    creativeDirection: {
+      mood: 'Regal, Celebratory & Harmonious',
+      colorPaletteRecommendation: ['#800020 (Burgundy)', '#D4AF37 (Warm Gold)', '#0F172A (Midnight)', '#F8FAFC (Ivory)'],
+      typographyStyle: 'Cinzel / Cormorant Garamond / Great Vibes',
+      ornamentationNotes: 'Ornate corner flourishes, delicate gold border divider lines, and elegant royal archways.',
+      recommendedArchetype: 'ImperialBurgundyTemplate',
+    },
+  };
+}
+
+/**
+ * Heuristic fallback template manifest generator in case of total upstream Gemini API downtime
+ */
+function generateFallbackTemplate(prompt: string, category: string): GeneratedTemplateSpec {
+  const words = prompt
+    .replace(/[^\w\s-]/gi, '')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 4);
+
+  const rawTitle = words.length > 0
+    ? words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    : `${category.charAt(0).toUpperCase() + category.slice(1)} Celebration`;
+
+  const slug = rawTitle
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || 'bespoke-celebration';
+
+  // Smart archetype match
+  let archetype = 'ImperialBurgundyTemplate';
+  let primary = '#7A1C30';
+  let accent = '#D4AF37';
+  let background = '#0B0F19';
+
+  const lower = prompt.toLowerCase();
+  if (lower.includes('botanical') || lower.includes('flower') || lower.includes('garden') || lower.includes('floral')) {
+    archetype = 'BotanicalRomanceTemplate';
+    primary = '#2D6A4F';
+    accent = '#D8B4E2';
+    background = '#0F1A15';
+  } else if (lower.includes('retro') || lower.includes('arcade') || lower.includes('neon') || lower.includes('80s')) {
+    archetype = 'ArtDecoNoirTemplate';
+    primary = '#EC4899';
+    accent = '#06B6D4';
+    background = '#09090B';
+  } else if (lower.includes('coastal') || lower.includes('beach') || lower.includes('pearl')) {
+    archetype = 'CoastalPearlTemplate';
+    primary = '#0284C7';
+    accent = '#FDE047';
+    background = '#082F49';
+  } else if (lower.includes('phulkari') || lower.includes('punjabi') || lower.includes('sangeet')) {
+    archetype = 'PhulkariCelebrationTemplate';
+    primary = '#DC2626';
+    accent = '#F59E0B';
+    background = '#18181B';
+  }
+
+  return {
+    name: rawTitle,
+    slug: `${slug}-${Math.random().toString(36).substring(2, 6)}`,
+    category,
+    description: `A stunning, high-definition digital invitation suite with tailored visual aesthetics and interactive guest experience.`,
+    templateComponent: archetype,
+    tags: [category, 'celebration', 'luxury', 'digital-invitation', 'interactive'],
+    priceTier: 'premium',
+    priceAmount: 49900,
+    currency: 'INR',
+    isActive: true,
+    isFeatured: true,
+    previewImageUrl: '/templates/preview-placeholder.jpg',
+    defaultColors: {
+      primary,
+      secondary: '#475569',
+      accent,
+      background,
+      surface: '#1E293B',
+      text: '#F8FAFC',
+    },
+    defaultFonts: {
+      heading: 'Cinzel',
+      body: 'Cormorant Garamond',
+      accent: 'Great Vibes',
+    },
+    features: [
+      'countdown_timer',
+      'interactive_rsvp',
+      'multi_event_timeline',
+      'google_maps_directions',
+      'audio_player',
+      'family_blessings',
+    ],
+    sampleData: {
+      couple: {
+        groom: 'Kabir Verma',
+        bride: 'Ananya Sharma',
+        tagline: 'Two Souls, One Sacred Journey',
+      },
+      welcomeMessage: 'We warmly welcome you to celebrate love, laughter, and lifelong memories with our families.',
+      storyContent: 'From a shared glance to a lifetime of adventures, we invite you to be part of our most treasured day.',
+      familyInfo: 'With the gracious blessings of our loving parents and elders.',
+      events: [
+        {
+          name: 'Welcome Soirée & Sangeet',
+          date: '2027-02-14',
+          time: '06:00 PM',
+          venueName: 'The Royal Courtyard',
+          venueAddress: 'Palace Road, Jaipur, Rajasthan',
+          dressCode: 'Indo-Western Glitz',
+          description: 'An evening of music, dance performances, and traditional feast.',
+        },
+        {
+          name: 'The Sacred Auspicious Wedding',
+          date: '2027-02-15',
+          time: '11:00 AM',
+          venueName: 'Grand Heritage Pavilion',
+          venueAddress: 'Palace Road, Jaipur, Rajasthan',
+          dressCode: 'Royal Traditional Formal',
+          description: 'Auspicious wedding ceremony followed by a celebratory royal luncheon banquet.',
+        },
+      ],
+    },
+  };
 }

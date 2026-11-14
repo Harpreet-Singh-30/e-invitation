@@ -17,6 +17,8 @@ import publicInvitationRoutes from './routes/publicInvitations';
 // import themeRoutes from './routes/themes';
 
 const app = express();
+// Enable trust proxy for Vercel / reverse proxies to support rate limiting
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
