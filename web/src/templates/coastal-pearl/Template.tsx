@@ -94,7 +94,14 @@ export function CoastalPearlTemplate({ data }: { data: TemplateData }) {
   const bride = clean(data.couple?.bride);
   const groom = clean(data.couple?.groom);
   const tagline = clean(data.couple?.tagline);
-  const initials = [bride, groom].map((n) => n.charAt(0).toUpperCase());
+  const hasCouple = Boolean(bride && groom);
+  const validNames = [bride, groom].filter(Boolean);
+  const initials = validNames.map((n) => n.charAt(0).toUpperCase());
+  const occasionLabel = (data as any)?.occasionType
+    ? `${(data as any).occasionType.replace('_', ' ')} invitation`
+    : hasCouple
+    ? 'Wedding invitation'
+    : 'Celebration invitation';
 
   const events = useMemo(
     () =>
@@ -268,9 +275,15 @@ export function CoastalPearlTemplate({ data }: { data: TemplateData }) {
           <div className="ih-intro__core">
             <Pearl size={64} className="ih-intro__pearl" />
             <p className="ih-intro__names">
-              {bride} <em>&amp;</em> {groom}
+              {hasCouple ? (
+                <>
+                  {bride} <em>&amp;</em> {groom}
+                </>
+              ) : (
+                <span>{groom || bride}</span>
+              )}
             </p>
-            <p className="ih-intro__sub">Wedding invitation</p>
+            <p className="ih-intro__sub capitalize">{occasionLabel}</p>
           </div>
         </div>
       )}
@@ -278,7 +291,13 @@ export function CoastalPearlTemplate({ data }: { data: TemplateData }) {
       {/* navigation */}
       <header className={`ih-nav${scrolled ? ' is-scrolled' : ''}${menuOpen ? ' is-open' : ''}`}>
         <button className="ih-nav__brand" onClick={() => goTo('hero')} aria-label="Back to top">
-          {initials[0]} <span>&amp;</span> {initials[1]}
+          {hasCouple ? (
+            <>
+              {initials[0]} <span>&amp;</span> {initials[1]}
+            </>
+          ) : (
+            <span>{initials[0] || 'C'}</span>
+          )}
         </button>
         {sections.length > 0 && (
           <nav className="ih-nav__links" aria-label="Sections">
@@ -316,11 +335,17 @@ export function CoastalPearlTemplate({ data }: { data: TemplateData }) {
           <Frond className="ih-hero__frond ih-hero__frond--l" />
           <Frond className="ih-hero__frond ih-hero__frond--r" />
           <div className="ih-hero__content">
-            <p className="ih-eyebrow ih-hero__eyebrow">Wedding invitation</p>
+            <p className="ih-eyebrow ih-hero__eyebrow capitalize">{occasionLabel}</p>
             <h1 className="ih-names">
-              <span>{bride}</span>
-              <em>&amp;</em>
-              <span>{groom}</span>
+              {hasCouple ? (
+                <>
+                  <span>{bride}</span>
+                  <em>&amp;</em>
+                  <span>{groom}</span>
+                </>
+              ) : (
+                <span>{groom || bride || 'Celebration'}</span>
+              )}
             </h1>
             {tagline && <p className="ih-hero__tagline">{tagline}</p>}
             {(firstDate || place) && (
@@ -351,7 +376,13 @@ export function CoastalPearlTemplate({ data }: { data: TemplateData }) {
               <div className="ih-signoff">
                 <PearlStrand count={7} />
                 <p className="ih-script">
-                  {bride} <em>&amp;</em> {groom}
+                  {hasCouple ? (
+                    <>
+                      {bride} <em>&amp;</em> {groom}
+                    </>
+                  ) : (
+                    <span>{groom || bride}</span>
+                  )}
                 </p>
               </div>
             </div>
@@ -370,7 +401,7 @@ export function CoastalPearlTemplate({ data }: { data: TemplateData }) {
               </div>
               <div className="ih-story__copy" data-reveal style={{ ['--d' as string]: '120ms' }}>
                 <p className="ih-eyebrow">Our story</p>
-                <h2 className="ih-h2">{clean(data.story?.title) || `${bride} & ${groom}`}</h2>
+                <h2 className="ih-h2">{clean(data.story?.title) || (hasCouple ? `${bride} & ${groom}` : (groom || bride))}</h2>
                 {storyParas.map((p, i) => (
                   <p key={i}>{p}</p>
                 ))}
@@ -385,7 +416,7 @@ export function CoastalPearlTemplate({ data }: { data: TemplateData }) {
             <Waves tone="ivory" className="ih-countdown__top" />
             <div className="ih-countdown__inner" data-reveal>
               <p className="ih-eyebrow ih-eyebrow--light">Until we celebrate</p>
-              <div className="ih-countdown__grid" role="timer" aria-label="Countdown to the wedding">
+              <div className="ih-countdown__grid" role="timer" aria-label="Countdown to celebration">
                 {(
                   [
                     ['Days', String(countdown.days)],
@@ -526,7 +557,13 @@ export function CoastalPearlTemplate({ data }: { data: TemplateData }) {
             <Monogram a={initials[0]} b={initials[1]} />
             <p className="ih-eyebrow">With love &amp; gratitude</p>
             <p className="ih-closing__names">
-              {bride} <em>&amp;</em> {groom}
+              {hasCouple ? (
+                <>
+                  {bride} <em>&amp;</em> {groom}
+                </>
+              ) : (
+                <span>{groom || bride}</span>
+              )}
             </p>
             {tagline && <p className="ih-closing__tagline">{tagline}</p>}
             {firstDate && <p className="ih-closing__date">{longDate(firstDate)}</p>}

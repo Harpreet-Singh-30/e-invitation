@@ -56,4 +56,5 @@ export interface TemplateData {
     /** Set false to skip the animated opening. Default true. */
     intro?: boolean;
   };
+  occasionType?: string;
 }

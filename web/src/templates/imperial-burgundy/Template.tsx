@@ -29,11 +29,29 @@ function parseTime(t?: string): { h: number; m: number } | null {
   return { h, m: min };
 }
 function eventDate(e: TemplateEvent): Date | null {
-  if (!e.eventDate) return null;
-  const p = e.eventDate.split('-').map(Number);
-  if (p.length < 3 || p.some(Number.isNaN)) return null;
-  const t = parseTime(e.startTime) ?? { h: 0, m: 0 };
-  return new Date(p[0], p[1] - 1, p[2], t.h, t.m, 0);
+  const raw = e.eventDate || (e as any).date;
+  if (!raw) return null;
+  if (raw instanceof Date) return isNaN(raw.getTime()) ? null : raw;
+
+  // If already full ISO string or contains timestamp
+  const d = new Date(raw);
+  if (!isNaN(d.getTime()) && String(raw).length > 10) return d;
+
+  const cleanDateStr = typeof raw === 'string' ? raw.split('T')[0] : '';
+  if (cleanDateStr) {
+    const parts = cleanDateStr.includes('-')
+      ? cleanDateStr.split('-').map(Number)
+      : cleanDateStr.split('/').map(Number);
+    if (parts.length === 3 && !parts.some(Number.isNaN)) {
+      const year = parts[0] > 1000 ? parts[0] : parts[2];
+      const month = parts[0] > 1000 ? parts[1] - 1 : parts[0] - 1;
+      const day = parts[0] > 1000 ? parts[2] : parts[1];
+      const t = parseTime(e.startTime) ?? { h: 0, m: 0 };
+      return new Date(year, month, day, t.h, t.m, 0);
+    }
+  }
+
+  return !isNaN(d.getTime()) ? d : null;
 }
 const fmt = (d: Date, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-IN', o).format(d);
 const pad = (n: number) => String(Math.max(0, n)).padStart(2, '0');
@@ -119,15 +137,27 @@ function Intro({ data, onDone, reduce }: { data: TemplateData; onDone: () => voi
     window.setTimeout(onDone, 1700);
   };
   const { groom, bride } = data.couple;
+  const hasBoth = Boolean(groom && bride);
+  const displayName = hasBoth ? `${groom} & ${bride}` : (groom || bride);
+  const initials = hasBoth ? `${initial(groom)}${initial(bride)}` : initial(groom || bride || 'C');
+  const occasionScript = data.occasionType ? `${data.occasionType.replace('_', ' ')} celebration` : 'Together with their families';
   return (
     <div className={`ib-intro ${opening ? 'is-opening' : ''}`} role="dialog" aria-label="Invitation cover">
       <div className="ib-door ib-door-l" /><div className="ib-door ib-door-r" />
       <Corner className="ib-intro-corner c1" /><Corner className="ib-intro-corner c2" />
       <Corner className="ib-intro-corner c3" /><Corner className="ib-intro-corner c4" />
       <div className="ib-intro-body">
-        <p className="ib-script">Together with their families</p>
-        <Seal initials={`${initial(groom)}${initial(bride)}`} />
-        <h1 className="ib-intro-names">{groom} <i>&amp;</i> {bride}</h1>
+        <p className="ib-script capitalize">{occasionScript}</p>
+        <Seal initials={initials} />
+        <h1 className="ib-intro-names">
+          {hasBoth ? (
+            <>
+              {groom} <i>&amp;</i> {bride}
+            </>
+          ) : (
+            <span>{displayName}</span>
+          )}
+        </h1>
         <button className="ib-btn" onClick={open} autoFocus>Open invitation</button>
         <button className="ib-skip" onClick={onDone}>Skip intro</button>
       </div>
@@ -147,7 +177,10 @@ export default function ImperialBurgundyTemplate({ data }: { data: TemplateData 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const { groom, bride, tagline } = data.couple;
-  const initials = `${initial(groom)}${initial(bride)}`;
+  const hasBoth = Boolean(groom && bride);
+  const displayName = hasBoth ? `${groom} & ${bride}` : (groom || bride);
+  const initials = hasBoth ? `${initial(groom)}${initial(bride)}` : initial(groom || bride || 'C');
+  const occasionScript = data.occasionType ? `${data.occasionType.replace('_', ' ')} celebration` : 'Together with their families';
 
   const events = useMemo(() => {
     return data.events
@@ -185,12 +218,29 @@ export default function ImperialBurgundyTemplate({ data }: { data: TemplateData 
 
   /* scroll reveal */
   useEffect(() => {
-    if (!entered || reduce || !rootRef.current) return;
+    if (!entered || !rootRef.current) return;
+    const isInsidePreview = typeof window !== 'undefined' && (
+      window.location.pathname.includes('/edit') ||
+      document.body.classList.contains('mobile-preview-body') ||
+      Boolean(rootRef.current.closest('.template-preview-container'))
+    );
     const els = rootRef.current.querySelectorAll('.ib-reveal');
-    const io = new IntersectionObserver((es) => es.forEach((x) => { if (x.isIntersecting) { x.target.classList.add('is-in'); io.unobserve(x.target); } }), { threshold: 0.15 });
+    if (reduce || isInsidePreview) {
+      els.forEach((el) => el.classList.add('is-in'));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (es) => es.forEach((x) => {
+        if (x.isIntersecting) {
+          x.target.classList.add('is-in');
+          io.unobserve(x.target);
+        }
+      }),
+      { threshold: 0.05, rootMargin: '50px' }
+    );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, [entered, reduce]);
+  }, [entered, reduce, events]);
 
   /* lightbox keys */
   useEffect(() => {
@@ -252,9 +302,15 @@ export default function ImperialBurgundyTemplate({ data }: { data: TemplateData 
           <Section id="hero" className="ib-hero">
             <Corner className="ib-corner tl" /><Corner className="ib-corner tr" />
             <div className="ib-hero-copy">
-              <p className="ib-script">Together with their families</p>
+              <p className="ib-script capitalize">{occasionScript}</p>
               <h1 className="ib-names">
-                <span>{groom}</span><i>&amp;</i><span>{bride}</span>
+                {hasBoth ? (
+                  <>
+                    <span>{groom}</span><i>&amp;</i><span>{bride}</span>
+                  </>
+                ) : (
+                  <span>{displayName}</span>
+                )}
               </h1>
               <Divider />
               {dateRange && <p className="ib-hero-date">{dateRange}</p>}
@@ -285,7 +341,15 @@ export default function ImperialBurgundyTemplate({ data }: { data: TemplateData 
           {data.story && (
             <Section id="couple" className="ib-couple">
               <div className="ib-couple-grid ib-reveal">
-                <div className="ib-pair"><span>{groom}</span><Seal initials={initials} /><span>{bride}</span></div>
+                <div className="ib-pair">
+                  {hasBoth ? (
+                    <>
+                      <span>{groom}</span><Seal initials={initials} /><span>{bride}</span>
+                    </>
+                  ) : (
+                    <span>{displayName}</span>
+                  )}
+                </div>
                 <div>
                   <h2 className="ib-h left">Our story</h2>
                   <p className="ib-story">{data.story}</p>
@@ -306,7 +370,7 @@ export default function ImperialBurgundyTemplate({ data }: { data: TemplateData 
           )}
 
           {events.length > 0 && (
-            <Section id="itinerary" className="ib-events">
+            <Section id="itinerary" data-section="events" className="ib-events">
               <h2 className="ib-h ib-reveal">The celebrations</h2>
               <Divider />
               <ol className="ib-timeline">
@@ -365,7 +429,15 @@ export default function ImperialBurgundyTemplate({ data }: { data: TemplateData 
 
           <Section id="closing" className="ib-closing">
             <Seal initials={initials} className="ib-reveal" />
-            <h2 className="ib-closing-names ib-reveal">{groom} <i>&amp;</i> {bride}</h2>
+            <h2 className="ib-closing-names ib-reveal">
+              {hasBoth ? (
+                <>
+                  {groom} <i>&amp;</i> {bride}
+                </>
+              ) : (
+                <span>{displayName}</span>
+              )}
+            </h2>
             <p className="ib-script big ib-reveal">With love and gratitude, we look forward to celebrating with you.</p>
             <Divider />
           </Section>

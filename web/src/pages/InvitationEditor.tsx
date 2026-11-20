@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../lib/api';
-import { resolveTemplate } from '../templates/registry';
+import { resolveTemplate, resolveDefaultTemplateForCategory } from '../templates/registry';
 import { adaptInvitationToTemplateData, extractCoupleNames } from '../templates/adapter';
 import MobilePhoneMockup from '../components/MobilePhoneMockup';
 import { getCategoryFormConfig } from './categoryFormConfig';
@@ -148,12 +148,16 @@ export default function InvitationEditor() {
         setBrideName(extracted.bride);
       }
 
-      // Set template identifier from theme object
+      // Set template identifier from theme object, or resolve default archetype for the occasion category
+      const occasionFallback = resolveDefaultTemplateForCategory(
+        invitation.occasionType || invitation.eventType || invitation.theme?.category
+      );
       const resolvedIdentifier =
         invitation.theme?.templateComponent ||
         invitation.theme?.slug ||
         invitation.theme?.id ||
-        'art-deco-noir';
+        occasionFallback ||
+        'imperial-burgundy';
       setTemplateIdentifier(resolvedIdentifier);
     } catch (err: any) {
       console.error('Load invitation error:', err);
@@ -194,21 +198,71 @@ export default function InvitationEditor() {
     }
   };
 
+  const scrollToPreviewSection = (sectionId: string) => {
+    // 1. Mobile Preview Iframe
+    const iframe = document.querySelector('iframe');
+    if (iframe?.contentDocument) {
+      // Auto open gate screen if present
+      const gateBtn = iframe.contentDocument.querySelector<HTMLButtonElement>('.ib-btn, button[class*="open"], [class*="door"]');
+      if (gateBtn && gateBtn.textContent && gateBtn.textContent.toLowerCase().includes('open')) {
+        gateBtn.click();
+      }
+
+      const el = iframe.contentDocument.querySelector(
+        `#${sectionId}, [id*="${sectionId}"], [data-section*="${sectionId}"], .ib-${sectionId}, .ib-events, [class*="${sectionId}"]`
+      );
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+    }
+
+    // 2. Desktop Preview Container
+    const desktopContainer = desktopWrapperRef.current || document.querySelector('.template-preview-container');
+    if (desktopContainer) {
+      const el = desktopContainer.querySelector(
+        `#${sectionId}, [id*="${sectionId}"], [data-section*="${sectionId}"], .ib-${sectionId}, .ib-events, [class*="${sectionId}"]`
+      );
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
+
+  const handleTabChange = (tab: 'details' | 'events' | 'story' | 'media') => {
+    setActiveTab(tab);
+    const targetMap: Record<string, string> = {
+      details: 'hero',
+      events: 'itinerary',
+      story: 'welcome',
+      media: 'venue',
+    };
+    setTimeout(() => {
+      scrollToPreviewSection(targetMap[tab] || 'hero');
+    }, 150);
+  };
+
   const handleAddEvent = () => {
     const defaultDate = events[0]?.eventDate || new Date().toISOString().split('T')[0];
-    setEvents([
+    const newIdx = events.length + 1;
+    const newEvents = [
       ...events,
       {
-        name: 'New Celebration Event',
+        name: `Celebration Event ${newIdx}`,
         eventDate: defaultDate,
         startTime: '19:00',
         endTime: '23:00',
-        venueName: 'Palace Pavilion',
-        venueAddress: 'Palace Grounds',
-        dressCode: 'Evening Elegant',
+        venueName: 'The Celebration Hall',
+        venueAddress: '123 Celebration Boulevard',
+        dressCode: 'Traditional / Festive Attire',
         description: 'Music, dinner, and cocktails.',
       },
-    ]);
+    ];
+    setEvents(newEvents);
+    // Smoothly scroll the preview to the events section immediately
+    setTimeout(() => {
+      scrollToPreviewSection('itinerary');
+    }, 150);
   };
 
   const handleRemoveEvent = (index: number) => {
@@ -414,7 +468,7 @@ export default function InvitationEditor() {
             <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-1 flex space-x-1 overflow-x-auto no-scrollbar">
               <button
                 type="button"
-                onClick={() => setActiveTab('details')}
+                onClick={() => handleTabChange('details')}
                 className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium whitespace-nowrap transition text-center ${
                   activeTab === 'details'
                     ? 'bg-rose-50 text-rose-700 font-semibold shadow-xs'
@@ -425,7 +479,7 @@ export default function InvitationEditor() {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('events')}
+                onClick={() => handleTabChange('events')}
                 className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium whitespace-nowrap transition text-center ${
                   activeTab === 'events'
                     ? 'bg-rose-50 text-rose-700 font-semibold shadow-xs'
@@ -436,7 +490,7 @@ export default function InvitationEditor() {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('story')}
+                onClick={() => handleTabChange('story')}
                 className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium whitespace-nowrap transition text-center ${
                   activeTab === 'story'
                     ? 'bg-rose-50 text-rose-700 font-semibold shadow-xs'
@@ -447,7 +501,7 @@ export default function InvitationEditor() {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('media')}
+                onClick={() => handleTabChange('media')}
                 className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-medium whitespace-nowrap transition text-center ${
                   activeTab === 'media'
                     ? 'bg-rose-50 text-rose-700 font-semibold shadow-xs'
@@ -801,6 +855,43 @@ export default function InvitationEditor() {
                   </div>
 
                   <div className="flex items-center space-x-2">
+                    {/* Section Quick Jump Buttons */}
+                    <div className="hidden sm:flex items-center space-x-1 text-xs border-r border-gray-700 pr-2">
+                      <span className="text-[10px] text-gray-400 uppercase font-semibold mr-0.5">Jump:</span>
+                      <button
+                        type="button"
+                        onClick={() => scrollToPreviewSection('hero')}
+                        className="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-[11px] transition cursor-pointer"
+                        title="Jump preview to Hero"
+                      >
+                        👑 Top
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => scrollToPreviewSection('itinerary')}
+                        className="px-2 py-0.5 rounded bg-rose-950/80 hover:bg-rose-900 border border-rose-700/50 text-rose-300 text-[11px] font-semibold transition cursor-pointer"
+                        title="Jump preview to Events Itinerary"
+                      >
+                        🗓️ Events ({events.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => scrollToPreviewSection('welcome')}
+                        className="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-[11px] transition cursor-pointer"
+                        title="Jump preview to Story"
+                      >
+                        📖 Story
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => scrollToPreviewSection('venue')}
+                        className="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-[11px] transition cursor-pointer"
+                        title="Jump preview to Venue"
+                      >
+                        📍 Venue
+                      </button>
+                    </div>
+
                     {/* Viewport Toggles */}
                     <div className="bg-gray-800 p-0.5 rounded-lg flex space-x-1 text-xs">
                       <button

@@ -54,7 +54,12 @@ export function PhulkariCelebrationTemplate({ data }: { data: TemplateData }) {
   const mainDate = main ? toDate(main) : null;
   const story = Array.isArray(couple.story) ? couple.story : couple.story ? [couple.story] : [];
   const pics = (gallery || []).filter((g) => g && g.src);
-  const initials = `${couple.bride?.[0] ?? ''}${couple.groom?.[0] ?? ''}`.toUpperCase();
+  const hasBoth = Boolean(couple.bride && couple.groom);
+  const displayName = couple.groom || couple.bride || 'Celebration';
+  const initials = (hasBoth
+    ? `${couple.bride?.[0] ?? ''}${couple.groom?.[0] ?? ''}`
+    : (displayName?.[0] ?? 'P')
+  ).toUpperCase();
   const first = (n?: string) => (n || '').split(' ')[0];
 
   const isThumb = Boolean((data as any)?._isThumbnail);
@@ -123,7 +128,7 @@ export function PhulkariCelebrationTemplate({ data }: { data: TemplateData }) {
           <div className="ihpc-seal">
             <div className="ihpc-frame">
               <div className="ihpc-mono" aria-hidden="true"><span>{initials}</span></div>
-              <p className="ihpc-cover-names">{first(couple.bride)} <i>and</i> {first(couple.groom)}</p>
+              <p className="ihpc-cover-names">{hasBoth ? <>{first(couple.bride)} <i>and</i> {first(couple.groom)}</> : displayName}</p>
               {mainDate && <p className="ihpc-cover-date">{longDate(mainDate)}</p>}
               <button className="ihpc-btn ihpc-btn-gold" onClick={open} disabled={phase === 'opening'}>Open the invitation</button>
             </div>
@@ -140,8 +145,8 @@ export function PhulkariCelebrationTemplate({ data }: { data: TemplateData }) {
       <section id="ihpc-home" className="ihpc-hero">
         <div className="ihpc-hero-in">
           <div className="ihpc-hero-text">
-            <p className="ihpc-kicker">The wedding of</p>
-            <h1><span>{couple.bride}</span><em>and</em><span>{couple.groom}</span></h1>
+            <p className="ihpc-kicker">{(data as any)?.occasionType ? `${(data as any).occasionType.replace('_', ' ')} celebration` : hasBoth ? 'The wedding of' : 'Celebration of'}</p>
+            <h1>{hasBoth ? (<><span>{couple.bride}</span><em>and</em><span>{couple.groom}</span></>) : (<span>{displayName}</span>)}</h1>
             {mainDate && <p className="ihpc-date">{longDate(mainDate)}{main?.startTime ? `, ${fmtT(main.startTime)}` : ''}</p>}
             {couple.tagline && <p className="ihpc-tagline">{couple.tagline}</p>}
             {main?.venueName && <p className="ihpc-where">{main.venueName}</p>}
@@ -158,7 +163,7 @@ export function PhulkariCelebrationTemplate({ data }: { data: TemplateData }) {
           <div className="ihpc-narrow">
             <h2>You are invited</h2>
             {family && <p className="ihpc-family">{family}</p>}
-            {family && <p className="ihpc-request">request the pleasure of your company at the wedding of their children</p>}
+            {family && <p className="ihpc-request">{hasBoth ? 'request the pleasure of your company at the wedding of their children' : 'request the pleasure of your company to celebrate this joyous occasion'}</p>}
             {message && <p className="ihpc-message">{message}</p>}
           </div>
         </section>
@@ -257,7 +262,7 @@ export function PhulkariCelebrationTemplate({ data }: { data: TemplateData }) {
         <div className="ihpc-frame ihpc-frame-ivory">
           <div className="ihpc-mono" aria-hidden="true"><span>{initials}</span></div>
           <h2>See you soon</h2>
-          <p>{first(couple.bride)} and {first(couple.groom)}{mainDate ? `, ${longDate(mainDate)}` : ''}</p>
+          <p>{hasBoth ? `${first(couple.bride)} and ${first(couple.groom)}` : displayName}{mainDate ? `, ${longDate(mainDate)}` : ''}</p>
         </div>
       </section>
 

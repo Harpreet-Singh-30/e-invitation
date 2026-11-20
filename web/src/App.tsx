@@ -15,6 +15,7 @@ import Editor from './pages/Editor';
 import PublishedSite from './pages/PublishedSite';
 import AdminLogin from './pages/admin/Login';
 import AdminDashboard from './pages/admin/Dashboard';
+import TemplateStudio from './pages/admin/TemplateStudio';
 import PublicInvitationView from './pages/PublicInvitationView';
 
 declare global {
@@ -86,6 +87,22 @@ function App() {
           <Route path="/invites/:slug" element={<PublicInvitationView />} />
           <Route path="/edit/:token" element={<Editor />} />
           <Route path="/admin/login" element={<AdminLogin />} />
+          <Route
+            path="/admin/studio"
+            element={
+              <AdminProtectedRoute>
+                <TemplateStudio />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/studio/:id"
+            element={
+              <AdminProtectedRoute>
+                <TemplateStudio />
+              </AdminProtectedRoute>
+            }
+          />
           <Route
             path="/admin/*"
             element={

@@ -17,7 +17,7 @@ export function Gate({ initials, dateLabel, opening, onOpen }: GateProps) {
   }, []);
 
   return (
-    <div className={`adn-gate${opening ? ' is-opening' : ''}`} role="dialog" aria-modal="true" aria-label="Wedding invitation">
+    <div className={`adn-gate${opening ? ' is-opening' : ''}`} role="dialog" aria-modal="true" aria-label="Invitation">
       <div className="adn-gate__door adn-gate__door--left" aria-hidden="true">
         <Sunburst className="adn-gate__fan" rays={27} rings={[8, 18, 32, 50, 72, 94]} innerRadius={8} />
       </div>

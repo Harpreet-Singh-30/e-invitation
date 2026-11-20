@@ -40,6 +40,7 @@ export interface TemplateData {
   heroImage?: string;
   heroImageUrl?: string;
   story?: any;
+  occasionType?: string;
 }
 
 export interface AdaptInvitationInput {
@@ -61,19 +62,22 @@ export interface AdaptInvitationInput {
  */
 function cleanExtractedName(raw: string): string {
   return raw
-    .replace(/\s+(wedding|marriage|ceremony|shaadi|invitation|party)$/i, '')
+    .replace(/\s+(wedding|marriage|ceremony|shaadi|invitation|party|birthday|anniversary|shower)$/i, '')
     .trim();
 }
 
 /**
- * Extracts couple names from title or explicit inputs
+ * Extracts couple or honoree names from title or explicit inputs with full occasion awareness
  */
 export function extractCoupleNames(
   title?: string | null,
   explicitGroom?: string | null,
-  explicitBride?: string | null
+  explicitBride?: string | null,
+  occasionType?: string | null
 ): { groom: string; bride: string } {
-  // If explicitly provided, use them
+  const isCoupleOccasion = !occasionType || occasionType === 'wedding' || occasionType === 'anniversary';
+
+  // If both are explicitly provided, use them
   if (explicitGroom?.trim() && explicitBride?.trim()) {
     return {
       groom: explicitGroom.trim(),
@@ -84,13 +88,13 @@ export function extractCoupleNames(
   if (explicitGroom?.trim()) {
     return {
       groom: explicitGroom.trim(),
-      bride: explicitBride?.trim() || 'Bride',
+      bride: explicitBride?.trim() || '', // Never fallback to 'Bride' for single celebrants!
     };
   }
 
   if (explicitBride?.trim()) {
     return {
-      groom: explicitGroom?.trim() || 'Groom',
+      groom: explicitGroom?.trim() || '',
       bride: explicitBride.trim(),
     };
   }
@@ -122,21 +126,21 @@ export function extractCoupleNames(
     // Single name in title
     return {
       groom: cleanExtractedName(trimmedTitle),
-      bride: 'Bride',
+      bride: '',
     };
   }
 
   return {
-    groom: 'Groom Name',
-    bride: 'Bride Name',
+    groom: isCoupleOccasion ? 'Groom Name' : 'Host / Honoree',
+    bride: isCoupleOccasion ? 'Bride Name' : '',
   };
 }
 
 /**
- * Adapts raw invitation / editor form state to the exact contract expected by wedding templates
+ * Adapts raw invitation / editor form state to the exact contract expected by wedding and multi-occasion templates
  */
 export function adaptInvitationToTemplateData(input: AdaptInvitationInput): TemplateData {
-  const { groom, bride } = extractCoupleNames(input.title, input.groomName, input.brideName);
+  const { groom, bride } = extractCoupleNames(input.title, input.groomName, input.brideName, input.occasionType);
 
   // Combine message fields so that welcome message, story, and family info are all represented
   const messageParts: string[] = [];
@@ -215,26 +219,41 @@ export function adaptInvitationToTemplateData(input: AdaptInvitationInput): Temp
     });
 
     // For wedding templates, ensure at least one event has key 'wedding'
-    const hasWeddingKey = events.some(e => e.key === 'wedding' || e.key.includes('wedding'));
-    if (!hasWeddingKey && events.length > 0) {
-      events[0].key = 'wedding';
+    if (!input.occasionType || input.occasionType === 'wedding') {
+      const hasWeddingKey = events.some(e => e.key === 'wedding' || e.key.includes('wedding'));
+      if (!hasWeddingKey && events.length > 0) {
+        events[0].key = 'wedding';
+      }
     }
   } else {
     // Default fallback event with future date
     const fallbackIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const isWedding = !input.occasionType || input.occasionType === 'wedding';
+    const defaultTitle = input.occasionType === 'birthday'
+      ? 'Birthday Celebration'
+      : input.occasionType === 'anniversary'
+      ? 'Anniversary Gala'
+      : input.occasionType === 'party'
+      ? 'Party Celebration'
+      : input.occasionType === 'baby_shower'
+      ? 'Baby Shower Ceremony'
+      : input.occasionType === 'housewarming'
+      ? 'Griha Pravesh & Housewarming'
+      : 'Celebration Event';
+
     events = [
       {
-        key: 'wedding',
-        title: 'Wedding Ceremony',
-        name: 'Wedding Ceremony',
+        key: isWedding ? 'wedding' : (input.occasionType || 'main-event'),
+        title: isWedding ? 'Wedding Ceremony' : defaultTitle,
+        name: isWedding ? 'Wedding Ceremony' : defaultTitle,
         date: fallbackIso,
         eventDate: fallbackIso.slice(0, 10),
         time: '6:00 PM',
         startTime: '6:00 PM',
-        venue: 'The Grand Palace',
-        venueName: 'The Grand Palace',
-        address: '456 Royal Avenue',
-        venueAddress: '456 Royal Avenue',
+        venue: 'The Grand Ballroom',
+        venueName: 'The Grand Ballroom',
+        address: '456 Grand Avenue',
+        venueAddress: '456 Grand Avenue',
         mapUrl: '#',
         mapLink: '#',
       },
@@ -244,13 +263,13 @@ export function adaptInvitationToTemplateData(input: AdaptInvitationInput): Temp
   const storyStr = input.storyContent?.trim() || undefined;
   const storyObj = storyStr
     ? {
-        title: 'Our Story',
+        title: input.occasionType === 'birthday' ? 'The Journey' : 'Our Story',
         body: storyStr,
         text: storyStr,
         paragraphs: storyStr.split(/\n+/).map(p => p.trim()).filter(Boolean),
         chapters: [
           {
-            title: 'Our Story',
+            title: input.occasionType === 'birthday' ? 'The Journey' : 'Our Story',
             date: '',
             text: storyStr,
           },
@@ -258,11 +277,25 @@ export function adaptInvitationToTemplateData(input: AdaptInvitationInput): Temp
       }
     : undefined;
 
+  const defaultTagline = input.occasionType === 'birthday'
+    ? 'Celebrating another wonderful year of life, laughter & adventure'
+    : input.occasionType === 'anniversary'
+    ? 'Celebrating a journey of timeless love and togetherness'
+    : input.occasionType === 'baby_shower'
+    ? 'Welcoming our sweetest bundle of joy with love'
+    : input.occasionType === 'housewarming'
+    ? 'New home, new memories, auspicious beginnings'
+    : input.occasionType === 'party'
+    ? 'Join us for a night of music, cocktails & celebration'
+    : bride && groom
+    ? 'Two hearts, one love'
+    : 'Join us in celebrating this special milestone';
+
   return {
     couple: {
       groom,
       bride,
-      tagline: input.tagline?.trim() || 'Two hearts, one love',
+      tagline: input.tagline?.trim() || defaultTagline,
       story: storyStr,
     },
     events,
@@ -276,6 +309,7 @@ export function adaptInvitationToTemplateData(input: AdaptInvitationInput): Temp
     heroImage: input.heroImageUrl?.trim() || undefined,
     heroImageUrl: input.heroImageUrl?.trim() || undefined,
     story: storyObj,
+    occasionType: input.occasionType || undefined,
   };
 }
 

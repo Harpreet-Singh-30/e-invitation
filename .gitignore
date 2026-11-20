@@ -71,3 +71,8 @@ invitation-design-assets/
 # Vercel
 .vercel/
 .vercelignore
+
+# Scratch & Temporary Testing
+scratch/
+workflow_screenshots/
+

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../lib/api';
-import { resolveTemplate } from '../templates/registry';
-import { adaptInvitationToTemplateData, extractCoupleNames } from '../templates/adapter';
+import { resolveTemplate, resolveDefaultTemplateForCategory } from '../templates/registry';
+import { adaptInvitationToTemplateData } from '../templates/adapter';
 
 export default function PublicInvitationView() {
   const { slug } = useParams<{ slug: string }>();
@@ -130,13 +130,10 @@ export default function PublicInvitationView() {
   }
 
   // 4. Render Live Published Invitation
-  const occasionType = invitation.eventType || invitation.theme?.category || 'wedding';
-  const names = extractCoupleNames(invitation.title, occasionType);
+  const occasionType = invitation.occasionType || invitation.eventType || invitation.theme?.category || 'wedding';
 
   const templateData = adaptInvitationToTemplateData({
     title: invitation.title,
-    groomName: names.groom,
-    brideName: names.bride,
     tagline: invitation.tagline || undefined,
     welcomeMessage: invitation.welcomeMessage || undefined,
     storyContent: invitation.storyContent || undefined,
@@ -147,12 +144,14 @@ export default function PublicInvitationView() {
     musicUrl: invitation.musicUrl || undefined,
   });
 
+  const occasionFallback = resolveDefaultTemplateForCategory(invitation.occasionType || invitation.eventType);
   const templateComponentId =
     invitation.theme?.templateComponent ||
     invitation.theme?.slug ||
-    'royal-maroon';
+    invitation.theme?.id ||
+    occasionFallback;
 
-  const resolved = resolveTemplate(templateComponentId) || resolveTemplate('royal-maroon');
+  const resolved = resolveTemplate(templateComponentId) || resolveTemplate(occasionFallback) || resolveTemplate('imperial-burgundy');
   const TemplateComponent = resolved!.component;
 
   return (

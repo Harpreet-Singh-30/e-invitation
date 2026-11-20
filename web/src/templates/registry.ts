@@ -570,6 +570,24 @@ function normalizeIdentifier(raw?: string | null): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
+export const OCCASION_DEFAULT_TEMPLATES: Record<string, string> = {
+  wedding: 'imperial-burgundy',
+  birthday: 'golden-milestone',
+  anniversary: 'silver-jubilee',
+  baby_shower: 'celestial-lullaby',
+  housewarming: 'hearth-heritage',
+  party: 'midnight-soiree',
+  religious: 'divya-mandap',
+  family_celebration: 'heritage-reunion',
+  other: 'aura-grand-gala',
+};
+
+export function resolveDefaultTemplateForCategory(category?: string | null): string {
+  if (!category) return 'imperial-burgundy';
+  const clean = category.toLowerCase().trim().replace(/[-\s]/g, '_');
+  return OCCASION_DEFAULT_TEMPLATES[clean] || 'imperial-burgundy';
+}
+
 /**
  * Resolves a template definition given any recognized identifier:
  * - Database Theme.templateComponent ('ArtDecoNoirTemplate', 'ImperialBurgundyTemplate', etc.)
@@ -577,6 +595,7 @@ function normalizeIdentifier(raw?: string | null): string {
  * - Database Theme.id (UUID)
  * - Legacy Template.id ('art-deco-noir-01', 'royal-maroon-01', etc.)
  * - Case-insensitive or normalized variants
+ * - Occasion category names ('birthday', 'wedding', 'anniversary', etc.)
  */
 export function resolveTemplate(identifier?: string | null): TemplateDefinition | null {
   if (!identifier) return null;
@@ -614,6 +633,12 @@ export function resolveTemplate(identifier?: string | null): TemplateDefinition 
         return def;
       }
     }
+  }
+
+  // 3b. Category lookup match (e.g. 'birthday', 'baby_shower')
+  const catKey = trimmed.toLowerCase().replace(/[-\s]/g, '_');
+  if (OCCASION_DEFAULT_TEMPLATES[catKey] && TEMPLATE_DEFINITIONS[OCCASION_DEFAULT_TEMPLATES[catKey]]) {
+    return TEMPLATE_DEFINITIONS[OCCASION_DEFAULT_TEMPLATES[catKey]];
   }
 
   // 4. Mapped archetype fallback

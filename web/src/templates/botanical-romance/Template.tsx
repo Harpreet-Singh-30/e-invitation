@@ -89,12 +89,25 @@ export function BotanicalRomanceTemplate({ data }: { data: TemplateData }) {
   const couple = data?.couple;
   const bride = couple?.bride?.trim() ?? '';
   const groom = couple?.groom?.trim() ?? '';
+  const hasBoth = Boolean(bride && groom);
+  const displayName = hasBoth ? `${bride} & ${groom}` : (groom || bride);
+  const occasionLabel = (data as any)?.occasionType
+    ? `${(data as any).occasionType.replace('_', ' ')} celebration`
+    : 'Together with their families';
   const events = useMemo(
     () => (data?.events ?? []).filter((e) => e && (has(e.title) || has(e.name))).slice().sort((a, b) => `${a.eventDate}${a.startTime ?? ''}`.localeCompare(`${b.eventDate}${b.startTime ?? ''}`)),
     [data?.events],
   );
   const gallery = useMemo(() => (data?.gallery ?? []).map((g: GalleryItem) => (typeof g === 'string' ? { url: g } : g) as { url: string; alt?: string; caption?: string }).filter((g) => has(g.url)), [data?.gallery]);
-  const story = (data?.story ?? []).filter((s) => s && has(s.title));
+  const storyRaw: any = data?.story;
+  const storyList: any[] = Array.isArray(storyRaw)
+    ? storyRaw
+    : Array.isArray(storyRaw?.chapters)
+    ? storyRaw.chapters
+    : storyRaw?.title || storyRaw?.body
+    ? [{ title: storyRaw.title || 'Our Story', text: storyRaw.body || storyRaw.text || '' }]
+    : [];
+  const story = storyList.filter((s) => s && has(s.title));
   const paragraphs = has(data?.message) ? data.message!.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean) : [];
   const first = events[0];
   const target = first?.eventDate ? `${first.eventDate}T${/^\d{1,2}:\d{2}$/.test(first.startTime ?? '') ? first.startTime!.padStart(5, '0') : '00:00'}:00` : null;
@@ -168,7 +181,7 @@ export function BotanicalRomanceTemplate({ data }: { data: TemplateData }) {
     <div className="ih-botanical-romance" ref={root}>
       <ArtDefs />
       <nav className={`br-nav${scrolled ? ' is-on' : ''}`} aria-label="Invitation sections">
-        <a href="#br-top" className="br-nav__mono" onClick={go('top')}>{ini(bride)} &amp; {ini(groom)}</a>
+        <a href="#br-top" className="br-nav__mono" onClick={go('top')}>{hasBoth ? `${ini(bride)} & ${ini(groom)}` : (ini(groom) || ini(bride))}</a>
         <ul>{nav.map((n) => <li key={n.id}><a href={`#br-${n.id}`} onClick={go(n.id)}>{n.label}</a></li>)}</ul>
       </nav>
 
@@ -182,8 +195,8 @@ export function BotanicalRomanceTemplate({ data }: { data: TemplateData }) {
         <Sprig seed={6} className="br-sway br-open__s2" leaves={8} flip />
         <div className="br-open__c">
           <Monogram a={ini(bride)} b={ini(groom)} />
-          <p className="br-open__n">{bride} &amp; {groom}</p>
-          <p className="br-open__d">{first?.eventDate ? fmtDate(first.eventDate, false) : has(couple.tagline) ? couple.tagline : 'Together with their families'}</p>
+          <p className="br-open__n">{displayName}</p>
+          <p className="br-open__d">{first?.eventDate ? fmtDate(first.eventDate, false) : has(couple.tagline) ? couple.tagline : occasionLabel}</p>
           <a className="br-btn" href="#br-couple" onClick={go('couple')}>Open the invitation</a>
         </div>
       </header>
@@ -191,18 +204,24 @@ export function BotanicalRomanceTemplate({ data }: { data: TemplateData }) {
       {/* 2 — hero */}
       <section className="br-hero" id="br-couple">
         <div className="br-hero__t">
-          <p className="br-small" data-reveal>Together with their families</p>
+          <p className="br-small capitalize" data-reveal>{occasionLabel}</p>
           <h1 data-reveal style={{ ['--d' as string]: '120ms' }}>
-            <span className="br-n1">{bride}</span>
-            <span className="br-and">and</span>
-            <span className="br-n2">{groom}</span>
+            {hasBoth ? (
+              <>
+                <span className="br-n1">{bride}</span>
+                <span className="br-and">and</span>
+                <span className="br-n2">{groom}</span>
+              </>
+            ) : (
+              <span className="br-n1">{displayName}</span>
+            )}
           </h1>
           {has(couple.tagline) && <p className="br-tag" data-reveal style={{ ['--d' as string]: '240ms' }}>{couple.tagline}</p>}
           {first && <p className="br-when" data-reveal style={{ ['--d' as string]: '320ms' }}>{fmtDate(first.eventDate)}<br />{first.venueName}</p>}
         </div>
         <div className="br-hero__p" data-reveal style={{ ['--d' as string]: '200ms' }}>
           {has(data.heroImageUrl) ? (
-            <div className="br-arch"><img src={data.heroImageUrl} alt={`${bride} and ${groom}`} /></div>
+            <div className="br-arch"><img src={data.heroImageUrl} alt={displayName} /></div>
           ) : (
             <div className="br-arch br-arch--art" aria-hidden="true">
               <Bloom hue="blush" seed={21} className="br-sway a1" /><Bloom hue="champagne" seed={22} className="br-sway a2" /><Bloom hue="sage" seed={23} className="br-sway a3" />
@@ -219,7 +238,7 @@ export function BotanicalRomanceTemplate({ data }: { data: TemplateData }) {
           <div className="br-welcome__b">
             <Dot><Divider className="br-div" /><h2 className="br-h">A note from us</h2></Dot>
             {paragraphs.map((p, i) => <p key={i} className={i === 0 ? 'br-lede' : 'br-p'} data-reveal>{p}</p>)}
-            <p className="br-sign" data-reveal>{bride} &amp; {groom}</p>
+            <p className="br-sign" data-reveal>{displayName}</p>
           </div>
         </section>
       )}
@@ -322,7 +341,7 @@ export function BotanicalRomanceTemplate({ data }: { data: TemplateData }) {
         <div className="br-close__c" data-reveal>
           <Monogram a={ini(bride)} b={ini(groom)} />
           <p className="br-close__t">{has(couple.tagline) ? couple.tagline : 'With love and gratitude'}</p>
-          <p className="br-close__n">{bride} &amp; {groom}</p>
+          <p className="br-close__n">{displayName}</p>
         </div>
       </footer>
 

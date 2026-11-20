@@ -384,6 +384,13 @@ router.get('/themes', async (req: Request, res: Response, next: NextFunction) =>
         slug: true,
         category: true,
         description: true,
+        templateComponent: true,
+        previewImageUrl: true,
+        previewUrl: true,
+        defaultColors: true,
+        defaultFonts: true,
+        features: true,
+        tags: true,
         priceTier: true,
         priceAmount: true,
         isActive: true,
@@ -397,6 +404,110 @@ router.get('/themes', async (req: Request, res: Response, next: NextFunction) =>
       success: true,
       themes,
       total: themes.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/admin/themes/:id
+ * Retrieve single theme by ID or slug
+ */
+router.get('/themes/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const theme = await prisma.theme.findFirst({
+      where: {
+        OR: [{ id }, { slug: id }],
+      },
+      include: {
+        _count: { select: { invitations: true } },
+      },
+    });
+
+    if (!theme) {
+      return res.status(404).json({ error: 'Theme not found' });
+    }
+
+    const defaultColors: any = theme.defaultColors || {};
+    const sampleData = defaultColors?.sampleData || null;
+    const cleanColors = { ...defaultColors };
+    delete cleanColors.sampleData;
+
+    res.json({
+      success: true,
+      theme: {
+        ...theme,
+        defaultColors: cleanColors,
+        sampleData,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PUT /api/admin/themes/:id
+ * Update an existing theme's properties, styling or sample data
+ */
+router.put('/themes/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const parseResult = themeManifestSchema.partial().safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        errors: parseResult.error.errors.map((e) => e.message),
+      });
+    }
+
+    const valid = parseResult.data;
+    const existing = await prisma.theme.findFirst({
+      where: { OR: [{ id }, { slug: id }] },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Theme not found' });
+    }
+
+    // Embed sampleData into defaultColors if provided
+    let colorsToSave: any = valid.defaultColors !== undefined ? valid.defaultColors : existing.defaultColors;
+    if (valid.sampleData) {
+      colorsToSave = {
+        ...(typeof colorsToSave === 'object' && colorsToSave !== null ? colorsToSave : {}),
+        sampleData: valid.sampleData,
+      };
+    }
+
+    const updated = await prisma.theme.update({
+      where: { id: existing.id },
+      data: {
+        ...(valid.name && { name: valid.name }),
+        ...(valid.slug && { slug: valid.slug }),
+        ...(valid.category && { category: valid.category }),
+        ...(valid.description !== undefined && { description: valid.description }),
+        ...(valid.tags && { tags: valid.tags }),
+        ...(valid.templateComponent && { templateComponent: valid.templateComponent }),
+        ...(valid.previewImageUrl !== undefined && { previewImageUrl: valid.previewImageUrl }),
+        ...(valid.previewUrl !== undefined && { previewUrl: valid.previewUrl }),
+        ...(valid.defaultColors !== undefined || valid.sampleData !== undefined ? { defaultColors: colorsToSave } : {}),
+        ...(valid.defaultFonts !== undefined && { defaultFonts: valid.defaultFonts }),
+        ...(valid.features !== undefined && { features: valid.features }),
+        ...(valid.priceTier && { priceTier: valid.priceTier }),
+        ...(valid.priceAmount !== undefined && { priceAmount: valid.priceAmount }),
+        ...(valid.currency && { currency: valid.currency }),
+        ...(valid.isActive !== undefined && { isActive: valid.isActive }),
+        ...(valid.isFeatured !== undefined && { isFeatured: valid.isFeatured }),
+        updatedAt: new Date(),
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Theme updated successfully',
+      theme: updated,
     });
   } catch (error) {
     next(error);
@@ -459,6 +570,7 @@ const themeManifestSchema = z.object({
   currency: z.string().optional().default('INR'),
   isActive: z.boolean().optional().default(true),
   isFeatured: z.boolean().optional().default(false),
+  sampleData: z.any().optional(),
 });
 
 /**
@@ -504,6 +616,14 @@ router.post('/themes/import', async (req: Request, res: Response, next: NextFunc
 
       const valid = parseResult.data;
 
+      let colorsToSave: any = valid.defaultColors || {};
+      if (valid.sampleData) {
+        colorsToSave = {
+          ...(typeof colorsToSave === 'object' && colorsToSave !== null ? colorsToSave : {}),
+          sampleData: valid.sampleData,
+        };
+      }
+
       // Upsert into PostgreSQL database
       const theme = await prisma.theme.upsert({
         where: { slug: valid.slug },
@@ -515,7 +635,7 @@ router.post('/themes/import', async (req: Request, res: Response, next: NextFunc
           templateComponent: valid.templateComponent,
           previewImageUrl: valid.previewImageUrl,
           previewUrl: valid.previewUrl || `/templates/${valid.slug}/preview`,
-          defaultColors: valid.defaultColors,
+          defaultColors: colorsToSave,
           defaultFonts: valid.defaultFonts,
           features: valid.features,
           priceTier: valid.priceTier,
@@ -534,7 +654,7 @@ router.post('/themes/import', async (req: Request, res: Response, next: NextFunc
           templateComponent: valid.templateComponent,
           previewImageUrl: valid.previewImageUrl,
           previewUrl: valid.previewUrl || `/templates/${valid.slug}/preview`,
-          defaultColors: valid.defaultColors,
+          defaultColors: colorsToSave,
           defaultFonts: valid.defaultFonts,
           features: valid.features,
           priceTier: valid.priceTier,
@@ -586,6 +706,14 @@ router.post('/themes', async (req: Request, res: Response, next: NextFunction) =
 
     const valid = parseResult.data;
 
+    let colorsToSave: any = valid.defaultColors || {};
+    if (valid.sampleData) {
+      colorsToSave = {
+        ...(typeof colorsToSave === 'object' && colorsToSave !== null ? colorsToSave : {}),
+        sampleData: valid.sampleData,
+      };
+    }
+
     // Check slug collision
     const existing = await prisma.theme.findUnique({
       where: { slug: valid.slug },
@@ -608,7 +736,7 @@ router.post('/themes', async (req: Request, res: Response, next: NextFunction) =
         templateComponent: valid.templateComponent,
         previewImageUrl: valid.previewImageUrl,
         previewUrl: valid.previewUrl || `/templates/${valid.slug}/preview`,
-        defaultColors: valid.defaultColors,
+        defaultColors: colorsToSave,
         defaultFonts: valid.defaultFonts,
         features: valid.features,
         priceTier: valid.priceTier,

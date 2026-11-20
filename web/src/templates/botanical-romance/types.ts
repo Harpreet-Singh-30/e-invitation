@@ -22,4 +22,5 @@ export interface TemplateData {
   heroImageUrl?: string;
   /** Optional extension: powers the editorial timeline. Hidden when absent. */
   story?: StoryItem[];
+  occasionType?: string;
 }

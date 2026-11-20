@@ -129,17 +129,21 @@ export function Frond({ className = '' }: { className?: string }) {
   );
 }
 
-export function Monogram({ a, b }: { a: string; b: string }) {
+export function Monogram({ a, b }: { a: string; b?: string }) {
   return (
     <svg className="ih-monogram" viewBox="0 0 120 120" aria-hidden="true">
       <circle cx="60" cy="60" r="56" fill="none" stroke="var(--ih-champagne)" strokeWidth=".8" />
       <circle cx="60" cy="60" r="50" fill="none" stroke="var(--ih-champagne)" strokeWidth=".4" strokeDasharray="1 3.2" />
       <text x="60" y="58" textAnchor="middle" className="ih-monogram__t">
         {a}
-        <tspan className="ih-monogram__amp" dx="3">
-          &amp;
-        </tspan>
-        <tspan dx="3">{b}</tspan>
+        {b ? (
+          <>
+            <tspan className="ih-monogram__amp" dx="3">
+              &amp;
+            </tspan>
+            <tspan dx="3">{b}</tspan>
+          </>
+        ) : null}
       </text>
       <circle cx="60" cy="82" r="3" fill="var(--ih-ivory)" stroke="var(--ih-champagne)" strokeWidth=".7" />
     </svg>

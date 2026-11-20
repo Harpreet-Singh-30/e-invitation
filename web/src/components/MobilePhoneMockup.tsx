@@ -58,6 +58,21 @@ export default function MobilePhoneMockup({
           clone.setAttribute('data-synced-style', 'true');
           doc.head.appendChild(clone);
         });
+
+        // Add preview visibility guarantee override style
+        const overrideStyle = doc.createElement('style');
+        overrideStyle.setAttribute('data-synced-style', 'true');
+        overrideStyle.textContent = `
+          .mobile-preview-body [class*="reveal"],
+          .mobile-preview-body .ib-reveal,
+          .mobile-preview-body .br-reveal,
+          .mobile-preview-body .cp-reveal {
+            opacity: 1 !important;
+            transform: none !important;
+            visibility: visible !important;
+          }
+        `;
+        doc.head.appendChild(overrideStyle);
       };
 
       syncStyles();

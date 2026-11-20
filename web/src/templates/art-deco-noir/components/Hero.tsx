@@ -38,10 +38,14 @@ export function Hero({ first, second, tagline, image, dateLine, venueLine }: Her
           )}
           <span className="adn-arch__scrim" aria-hidden="true" />
         </div>
-        <h1 id="adn-hero-title" className="adn-hero__names" aria-label={`${first} and ${second}`} tabIndex={-1}>
+        <h1 id="adn-hero-title" className="adn-hero__names" aria-label={second ? `${first} and ${second}` : first} tabIndex={-1}>
           <span className="adn-hero__name" aria-hidden="true">{first}</span>
-          <span className="adn-hero__amp" aria-hidden="true">&amp;</span>
-          <span className="adn-hero__name" aria-hidden="true">{second}</span>
+          {second ? (
+            <>
+              <span className="adn-hero__amp" aria-hidden="true">&amp;</span>
+              <span className="adn-hero__name" aria-hidden="true">{second}</span>
+            </>
+          ) : null}
         </h1>
       </div>
 

@@ -24,4 +24,5 @@ export interface TemplateData {
   music: { enabled: boolean; trackId?: string };
   gallery?: { url: string; alt?: string }[];
   heroImageUrl?: string;
+  occasionType?: string;
 }

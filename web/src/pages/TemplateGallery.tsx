@@ -670,6 +670,7 @@ export default function TemplateGallery() {
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dbTemplates, setDbTemplates] = useState<Template[]>([]);
+  const [pendingTitle] = useState(sessionStorage.getItem('invitationTitle') || '');
 
   useEffect(() => {
     // Dynamically fetch all active themes from the backend database
@@ -857,6 +858,35 @@ export default function TemplateGallery() {
           )}
         </div>
       </nav>
+
+      {/* Creation Step 2 Context Banner */}
+      {selectedCategory !== 'all' && (
+        <div className="bg-amber-500/10 border-b border-amber-500/20 py-3 px-4">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+            <div className="flex items-center space-x-2 text-amber-900 font-medium">
+              <span className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 font-bold flex items-center justify-center text-[10px]">
+                2
+              </span>
+              <span>
+                Step 2 of 3: Choose a design for your{' '}
+                <strong className="capitalize text-amber-950">{selectedCategory.replace('_', ' ')}</strong> invitation
+                {pendingTitle && (
+                  <span className="text-amber-800"> (Title: "{pendingTitle}")</span>
+                )}
+              </span>
+            </div>
+            <Link
+              to="/invitations/new"
+              onClick={() => {
+                sessionStorage.removeItem('selectedTemplate');
+              }}
+              className="text-amber-800 hover:text-amber-950 font-semibold underline underline-offset-2 flex items-center gap-1"
+            >
+              <span>← Change Category</span>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="bg-gradient-to-b from-rose-50 to-white py-12 px-4">

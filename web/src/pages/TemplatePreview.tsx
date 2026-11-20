@@ -1780,40 +1780,59 @@ export default function TemplatePreview() {
   // Personalize demo data if viewing a custom database theme
   const cleanName = (dbTheme?.name || templateDef.name).replace(/\b(template|theme|suite)\b/gi, '').trim();
   const nameParts = cleanName.includes('&') ? cleanName.split('&') : [cleanName, ''];
-  const groom = nameParts[0]?.trim() || 'Kabir';
-  const bride = nameParts[1]?.trim() || (dbTheme?.category === 'wedding' || templateDef.category === 'wedding' ? 'Meera' : '');
+  const groom = nameParts[0]?.trim() || 'Aarav';
+  const effectiveCategory = (dbTheme?.category || templateDef.category || 'wedding').toLowerCase();
+  const isCouple = ['wedding', 'anniversary'].includes(effectiveCategory);
+  const bride = nameParts[1]?.trim() || (isCouple ? 'Meera' : '');
+
+  const savedSample = dbTheme?.sampleData || dbTheme?.defaultColors?.sampleData;
 
   const customThemeDemo = dbTheme
     ? {
-        couple: {
-          groom,
-          bride,
-          tagline: dbTheme.description || 'Together with their families request the pleasure of your company',
-        },
-        events: [
-          {
-            key: 'main-celebration',
-            title: dbTheme.category === 'wedding' ? 'The Royal Wedding Ceremony & Reception' : dbTheme.name,
-            date: '2027-11-20',
-            time: '6:30 PM Onwards',
-            venue: 'The Grand Heritage Pavilion',
-            address: 'Palace Grounds, Jaipur',
-            description: dbTheme.description || 'Join us for cocktails, dinner, and dancing under the stars.',
-          },
-          {
-            key: 'welcome-evening',
-            title: 'Welcome Sangeet & Cocktails',
-            date: '2027-11-19',
-            time: '7:30 PM',
-            venue: 'The Courtyard',
-            address: 'Palace Grounds, Jaipur',
-            description: 'An evening of music, dance, and traditional banquet.',
-          },
-        ],
-        message: dbTheme.description || 'We look forward to celebrating this special milestone with you.',
+        couple: savedSample?.couple
+          ? {
+              groom: savedSample.couple.groom || groom,
+              bride: isCouple ? (savedSample.couple.bride || '') : '',
+              tagline: savedSample.couple.tagline || dbTheme.description || 'Join us in celebrating this special occasion',
+            }
+          : {
+              groom,
+              bride,
+              tagline: dbTheme.description || 'Join us in celebrating this special occasion',
+            },
+        events: savedSample?.events && savedSample.events.length > 0
+          ? savedSample.events.map((e: any, idx: number) => ({
+              key: `event-${idx}`,
+              title: e.name || e.title || `Event ${idx + 1}`,
+              name: e.name || e.title || `Event ${idx + 1}`,
+              date: e.date || '2027-11-20',
+              eventDate: e.date || '2027-11-20',
+              time: e.time || '6:30 PM Onwards',
+              startTime: e.time || '6:30 PM Onwards',
+              venue: e.venueName || 'The Grand Heritage Pavilion',
+              venueName: e.venueName || 'The Grand Heritage Pavilion',
+              address: e.venueAddress || 'Palace Grounds',
+              venueAddress: e.venueAddress || 'Palace Grounds',
+              description: e.description,
+            }))
+          : [
+              {
+                key: 'main-celebration',
+                title: isCouple ? 'The Royal Wedding Ceremony & Reception' : dbTheme.name,
+                name: isCouple ? 'The Royal Wedding Ceremony & Reception' : dbTheme.name,
+                date: '2027-11-20',
+                eventDate: '2027-11-20',
+                time: '6:30 PM Onwards',
+                venue: 'The Grand Heritage Pavilion',
+                address: 'Palace Grounds',
+                description: dbTheme.description || 'Join us for cocktails, dinner, and celebration under the stars.',
+              },
+            ],
+        message: savedSample?.welcomeMessage || dbTheme.description || 'We look forward to celebrating this special milestone with you.',
         themeColors: dbTheme.defaultColors,
         defaultColors: dbTheme.defaultColors,
         defaultFonts: dbTheme.defaultFonts,
+        occasionType: effectiveCategory,
       }
     : null;
 
@@ -1833,25 +1852,61 @@ export default function TemplatePreview() {
         },
       ],
       message: templateDef.description,
+      occasionType: effectiveCategory,
     };
 
   // Dynamic CSS variables so custom palette is applied to the archetype
+  const colors = dbTheme?.defaultColors || {};
+  const fonts = dbTheme?.defaultFonts || {};
+  const primary = colors.primary || '#8B0000';
+  const secondary = colors.secondary || '#D4AF37';
+  const accent = colors.accent || '#E5C158';
+  const background = colors.background || '#0B0F19';
+  const surface = colors.surface || '#151D2A';
+  const text = colors.text || '#FFFFFF';
+  const fontHeading = fonts.heading || 'Cinzel';
+  const fontBody = fonts.body || 'Cormorant Garamond';
+  const fontAccent = fonts.accent || 'Great Vibes';
+
   const dynamicPreviewStyles: React.CSSProperties = {
     isolation: 'isolate',
     transform: 'translateZ(0)',
-    ...(dbTheme?.defaultColors?.primary
+    ...(colors.primary
       ? {
-          '--burg': dbTheme.defaultColors.primary,
-          '--primary': dbTheme.defaultColors.primary,
-          '--wine': dbTheme.defaultColors.secondary || dbTheme.defaultColors.accent || dbTheme.defaultColors.primary,
-          '--gold': dbTheme.defaultColors.accent || '#D4AF37',
-          '--accent': dbTheme.defaultColors.accent || '#D4AF37',
-          '--deep': dbTheme.defaultColors.background || '#060A17',
-          '--background': dbTheme.defaultColors.background || '#060A17',
-          '--ivory': dbTheme.defaultColors.text || '#FAF7F0',
-          '--cream': dbTheme.defaultColors.surface || '#0F1A3A',
-          '--serif': dbTheme.defaultFonts?.heading ? `'${dbTheme.defaultFonts.heading}', serif` : undefined,
-          '--cinzel': dbTheme.defaultFonts?.heading ? `'${dbTheme.defaultFonts.heading}', serif` : undefined,
+          '--color-primary': primary,
+          '--color-secondary': secondary,
+          '--color-accent': accent,
+          '--color-bg': background,
+          '--color-surface': surface,
+          '--color-text': text,
+          '--burg': primary,
+          '--primary': primary,
+          '--wine': secondary,
+          '--gold': accent,
+          '--accent': accent,
+          '--deep': background,
+          '--background': background,
+          '--surface': surface,
+          '--cream': surface,
+          '--ivory': surface,
+          '--char': text,
+          '--text': text,
+          '--ih-teal': primary,
+          '--ih-coral': accent,
+          '--ih-sand': surface,
+          '--ih-deep': background,
+          '--ih-champagne': accent,
+          '--ih-surface': surface,
+          '--ih-ink': text,
+          '--font-heading': fontHeading,
+          '--font-body': fontBody,
+          '--font-accent': fontAccent,
+          '--serif': `'${fontHeading}', serif`,
+          '--cinzel': `'${fontHeading}', serif`,
+          '--f-display': `'${fontHeading}', serif`,
+          '--f-body': `'${fontBody}', sans-serif`,
+          '--ih-serif': `'${fontHeading}', serif`,
+          '--ih-sans': `'${fontBody}', sans-serif`,
         }
       : {}),
   };

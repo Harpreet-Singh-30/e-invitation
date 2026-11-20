@@ -694,16 +694,25 @@ export default function AdminDashboard() {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <div>
                     <h2 className="text-xl font-bold text-white">Theme Catalog &amp; Template Library</h2>
-                    <p className="text-xs text-slate-400">Manage, export, and import design templates across all categories</p>
+                    <p className="text-xs text-slate-400">Manage, export, and build product templates with real-time live preview &amp; AI</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsImportModalOpen(true)}
-                    className="px-4 py-2 bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <span>📥</span>
-                    <span>Import Template</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      to="/admin/studio"
+                      className="px-4 py-2 bg-gradient-to-r from-amber-500 via-amber-400 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>✨</span>
+                      <span>Open AI Template Studio</span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setIsImportModalOpen(true)}
+                      className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>📥</span>
+                      <span>Import JSON</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Search & Category Filter */}
@@ -761,6 +770,14 @@ export default function AdminDashboard() {
                           Used in <strong className="text-white">{t._count?.invitations || 0}</strong> invites
                         </span>
                         <div className="flex items-center gap-1.5">
+                          <Link
+                            to={`/admin/studio/${t.id}`}
+                            title="Edit in Template Studio"
+                            className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold rounded-lg transition flex items-center gap-1"
+                          >
+                            <span>✏️</span>
+                            <span>Studio</span>
+                          </Link>
                           <button
                             title="Export JSON Manifest"
                             onClick={() => handleExportTheme(t)}

@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 import { prisma } from '../lib/prisma';
 
 const router = Router();
@@ -45,6 +46,7 @@ router.get('/invitations/:slug', async (req: Request, res: Response, next: NextF
         isPublished: false,
         title: invitation.title,
         eventType: invitation.eventType,
+        occasionType: invitation.eventType,
         themeComponent: invitation.theme?.templateComponent || 'royal-maroon',
       });
     }
@@ -57,6 +59,7 @@ router.get('/invitations/:slug', async (req: Request, res: Response, next: NextF
         title: invitation.title,
         slug: invitation.slug,
         eventType: invitation.eventType,
+        occasionType: invitation.eventType,
         tagline: invitation.tagline,
         welcomeMessage: invitation.welcomeMessage,
         storyContent: invitation.storyContent,
@@ -87,6 +90,86 @@ router.get('/invitations/:slug', async (req: Request, res: Response, next: NextF
     });
   } catch (error) {
     console.error('Error fetching public invitation:', error);
+    next(error);
+  }
+});
+
+/**
+ * POST /api/public/invitations/:slug/rsvp
+ * Submit a public guest RSVP
+ */
+router.post('/invitations/:slug/rsvp', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { slug } = req.params;
+    const {
+      guestName,
+      name,
+      email,
+      phone,
+      attending,
+      isAttending,
+      attendeeCount,
+      partySize,
+      dietaryRestrictions,
+      wishes,
+      message,
+    } = req.body;
+
+    const effectiveName = (guestName || name || 'Honored Guest').trim();
+    const effectiveAttending = attending === 'attending' || attending === true || isAttending === true || isAttending === 'true';
+    const effectiveCount = Number(attendeeCount || partySize || 1);
+
+    const invitation = await prisma.invitation.findFirst({
+      where: {
+        slug,
+        isPublished: true,
+      },
+    });
+
+    if (!invitation) {
+      return res.status(404).json({ error: 'Invitation not found or not published' });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const guest = await tx.guest.create({
+        data: {
+          invitationId: invitation.id,
+          householdName: effectiveName,
+          token: crypto.randomUUID(),
+          email: email || null,
+          phone: phone || null,
+          maxGuests: effectiveCount,
+          allowedEvents: ['main-celebration'],
+        },
+      });
+
+      const rsvp = await tx.rsvp.create({
+        data: {
+          guestId: guest.id,
+          isAttending: effectiveAttending,
+          attendingCount: effectiveAttending ? effectiveCount : 0,
+          eventsAttending: ['main-celebration'],
+          dietaryRestrictions: dietaryRestrictions || null,
+          message: wishes || message || null,
+          respondedAt: new Date(),
+        },
+      });
+
+      return { guest, rsvp };
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Thank you! Your RSVP has been received.',
+      rsvp: {
+        guestId: result.guest.id,
+        guestName: result.guest.householdName,
+        isAttending: result.rsvp.isAttending,
+        attendingCount: result.rsvp.attendingCount,
+      },
+    });
+  } catch (error) {
+    console.error('Error submitting public RSVP:', error);
     next(error);
   }
 });
@@ -126,10 +209,19 @@ router.get('/themes', async (req: Request, res: Response, next: NextFunction) =>
       },
     });
 
+    const mappedThemes = themes.map((t) => {
+      const defaultColors: any = t.defaultColors || {};
+      const sampleData = defaultColors?.sampleData || null;
+      return {
+        ...t,
+        sampleData,
+      };
+    });
+
     res.json({
       success: true,
-      themes,
-      total: themes.length,
+      themes: mappedThemes,
+      total: mappedThemes.length,
     });
   } catch (error) {
     console.error('Error fetching public themes:', error);
@@ -159,9 +251,15 @@ router.get('/themes/:slug', async (req: Request, res: Response, next: NextFuncti
       return res.status(404).json({ error: 'Theme not found' });
     }
 
+    const defaultColors: any = theme.defaultColors || {};
+    const sampleData = defaultColors?.sampleData || null;
+
     res.json({
       success: true,
-      theme,
+      theme: {
+        ...theme,
+        sampleData,
+      },
     });
   } catch (error) {
     console.error('Error fetching theme by slug:', error);

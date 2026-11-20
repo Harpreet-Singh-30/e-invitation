@@ -1,10 +1,10 @@
-# InviteHub — Premium Multi-Occasion Digital Invitation Platform
+# InviteHub — Luxury Multi-Occasion Digital Invitation Platform
 
-> 🚀 **Production Status**: Live on Vercel  
-> 🌐 **Web App**: [https://e-invitation-rosy.vercel.app](https://e-invitation-rosy.vercel.app)  
-> ⚡ **API**: [https://e-invitation-api-chi.vercel.app](https://e-invitation-api-chi.vercel.app)  
-> 🛡️ **Admin Dashboard**: [https://e-invitation-rosy.vercel.app/admin/dashboard](https://e-invitation-rosy.vercel.app/admin/dashboard) (Credentials: `admin@wedding-saas.com` / `admin123`)  
-> 📖 **Master Guide**: See [PROJECT_STATUS_AND_FLOW.md](./PROJECT_STATUS_AND_FLOW.md) for full flow diagrams and architecture
+> 🚀 **Production Architecture**: Decoupled React 18 SPA + Node.js/Express API + Supabase PostgreSQL  
+> 🌐 **Live Web Application**: [http://localhost:5173](http://localhost:5173) (Local) / Vercel Edge (Production)  
+> ⚡ **REST API Server**: [http://localhost:3000/api](http://localhost:3000/api)  
+> 🛡️ **Admin Console**: `/admin/dashboard` (Default: `admin@wedding-saas.com` / `admin123`)  
+> 📖 **Authoritative Documentation**: See [project-documentation/README.md](project-documentation/README.md) (or `project document/`)
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React%2018-20232A?style=flat-square&logo=react&logoColor=61DAFB)](https://reactjs.org/)
@@ -15,304 +15,72 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 
-InviteHub is a full-stack, enterprise-grade SaaS platform for authoring, customizing, monetizing, and publishing bespoke digital event invitation websites. The platform supports **9 occasion categories** with **50+ designer templates**, rich interactive entrance gates, ambient audio players, multi-device previews, simulated payment checkout, an executive administration console, and an autonomous **Gemini AI Template Studio**.
+---
+
+## 1. About InviteHub
+
+InviteHub is an enterprise-grade digital invitation and event experience platform engineered for luxury celebrations across the Indian and global diaspora. It delivers:
+- **Interactive Guest Micro-Apps:** Sealed wax envelope gates, music accompaniment, interactive multi-event itineraries, Google Maps links, and 2-tap RSVP submission with dietary preferences.
+- **Host Self-Service Studio:** 4-step invitation wizard, split-screen live customizer with real-time iPhone preview, RSVP guest management, and Razorpay tier upgrades.
+- **Admin AI Template Studio ("Lovable Mode"):** Autonomous prompt-driven template generation powered by **Google Gemini 2.5 Flash**, allowing non-technical admins to create and publish new celebration themes directly to the live catalog in under 60 seconds.
 
 ---
 
-## 📑 Table of Contents
-1. [Master Flow & Status Documentation (PROJECT_STATUS_AND_FLOW.md)](./PROJECT_STATUS_AND_FLOW.md)
-2. [Tech Stack & Architecture](#-tech-stack--architecture)
-3. [Step-by-Step Local Setup Guide](#-step-by-step-local-setup-guide)
-4. [Default Credentials & Test Accounts](#-default-credentials--test-accounts)
-5. [What We Have Achieved](#-what-we-have-achieved)
-6. [Gemini AI Template Studio](#-gemini-ai-template-studio)
-7. [Roadmap & What is Still Pending](#-roadmap--what-is-still-pending)
-8. [Repository Structure](#-repository-structure)
+## 2. Centralized Project Documentation
+
+All authoritative requirements, architectural diagrams, API references, test logs, and milestone plans are centralized in **[`project-documentation/`](project-documentation/README.md)** (aliased as `project document/`):
+
+1. **[01. Project Overview & Vision](project-documentation/01-project-overview.md)** — Market positioning, hybrid pay-per-event business model, personas.
+2. **[02. Current State Technical Audit](project-documentation/02-current-state-audit.md)** — Verified codebase, database records, route inventory, and health status.
+3. **[03. Product Requirements Document (PRD)](project-documentation/03-product-requirements.md)** — Functional & non-functional requirements, acceptance criteria.
+4. **[04. Feature Inventory Matrix](project-documentation/04-feature-inventory.md)** — Comprehensive requirement vs. implementation vs. test status tracker.
+5. **[05. System Architecture & Technical Design](project-documentation/05-system-architecture.md)** — C4 models, monorepo design, Gemini AI engine, and data flows.
+6. **[06. Database Schema & REST API](project-documentation/06-database-and-api.md)** — Prisma entity models, relations, endpoints, payloads, and response schemas.
+7. **[07. Roles, Security & Permissions](project-documentation/07-user-roles-and-permissions.md)** — RBAC matrix, JWT tokens, middleware, OWASP compliance.
+8. **[08. End-to-End User Workflows](project-documentation/08-user-workflows.md)** — Mermaid diagrams for guest unboxing, host wizard, and customizer studio.
+9. **[09. Admin & AI Template Studio Workflows](project-documentation/09-admin-workflows.md)** — Gemini prompt flow, Lovable-mode iteration, catalog publishing.
+10. **[10. UI/UX Design System](project-documentation/10-ui-ux-requirements.md)** — Mobile-first viewport standards, color tokens, typography, and animations.
+11. **[11. Developer Onboarding & Guidelines](project-documentation/11-development-guidelines.md)** — Local setup, environment variables, commands, Git branching.
+12. **[12. QA & Testing Strategy](project-documentation/12-qa-and-testing-strategy.md)** — Test pyramid, automated browser testing, bug severity definitions.
+13. **[13. Test Cases & Execution Results](project-documentation/13-test-cases-and-results.md)** — Automated test logs and verified screenshots for 10 core scenarios.
+14. **[14. Known Issues & Technical Debt](project-documentation/14-known-issues-and-technical-debt.md)** — Defect catalog, root-cause analyses, serverless risks.
+15. **[15. Strategic Roadmap & Milestones](project-documentation/15-project-roadmap-and-milestones.md)** — Phased delivery plan (M1–M5), priorities (P0–P3).
+16. **[16. Actionable Task Backlog](project-documentation/16-task-backlog.md)** — Sprint-ready user stories with story points and Definitions of Done.
+17. **[17. Deployment & Environment](project-documentation/17-deployment-and-environment.md)** — Vercel configuration, serverless routing, Supabase pooling.
+18. **[18. Architectural Decision Log (ADRs)](project-documentation/18-decision-log.md)** — Formal ADR-001 through ADR-006 records.
+19. **[19. Open Questions & Assumptions](project-documentation/19-open-questions-and-assumptions.md)** — Business hypotheses, pricing experiments, scale unknowns.
+20. **[20. Platform Change History](project-documentation/20-change-history.md)** — Full changelog from v0.1.0 prototype to v2.0.0 AI Studio.
 
 ---
 
-## 🛠 Tech Stack & Architecture
+## 3. Quick Start (Local Development)
 
-### Backend (`/server`)
-- **Runtime**: Node.js 20+ with TypeScript
-- **Framework**: Express.js with Helmet, CORS, and Express Rate Limiter
-- **Database**: PostgreSQL with Prisma ORM 5.22
-- **Authentication**: JWT (Access Token + Refresh Token flow) with `bcryptjs` password hashing
-- **Validation**: Zod schema validation across all API boundaries
-
-### Frontend (`/web`)
-- **Framework**: React 18 with TypeScript
-- **Build Tooling**: Vite 5 (Hot Module Replacement)
-- **Styling**: Tailwind CSS with custom typography, gradient glows, and mobile frames
-- **Routing**: React Router v6 with Role-Based Route Guards (`ProtectedRoute`, `AdminProtectedRoute`)
-- **State & Context**: React Context API (`AuthContext`) + Session Storage synchronization
-- **Testing & E2E**: Playwright with Chromium for automated UI/UX and API verification
-
----
-
-## 🚀 Step-by-Step Local Setup Guide
-
-Follow these steps to clone, configure, and launch the application locally.
-
-### 1. Prerequisites
-- **Node.js**: v20.x or higher (`node -v`)
-- **npm**: v10.x or higher (`npm -v`)
-- **PostgreSQL**: v14+ running locally or in Docker (`psql --version`)
-
-### 2. Clone the Repository
 ```bash
-git clone https://github.com/Harpreet-Singh-30/e-invitation.git
-cd e-invitation
-```
-
-### 3. Configure PostgreSQL Database
-Ensure PostgreSQL is active and create the database user and database:
-```sql
-CREATE USER wedding_admin WITH PASSWORD 'admin123';
-CREATE DATABASE wedding_saas OWNER wedding_admin;
-GRANT ALL PRIVILEGES ON DATABASE wedding_saas TO wedding_admin;
-```
-
-### 4. Setup Backend Environment & Dependencies
-```bash
+# 1. Backend Setup
 cd server
 npm install
+npx prisma generate
+npx prisma db push
+npm run dev # Starts on port 3000
 
-# Copy environment template
-cp .env.example .env
-
-# Run Prisma database migrations
-npx prisma migrate dev --name init
-
-# Seed the database with 50+ templates, demo invitations, and test accounts
-npm run seed
-```
-
-### 5. Setup Frontend Environment & Dependencies
-```bash
+# 2. Frontend Setup (in separate terminal)
 cd ../web
 npm install
-
-# Copy environment template
-cp .env.example .env
-
-# Verify clean compilation
-npm run build
+npm run dev # Starts on port 5173
 ```
 
-### 6. Run the Application in Development Mode
-
-Open two terminal tabs:
-
-**Tab 1: Backend Server** (Port 3000)
-```bash
-cd server
-npm run dev
-```
-*Health Check*: `http://localhost:3000/healthz`
-
-**Tab 2: Frontend Web App** (Port 5173)
-```bash
-cd web
-npm run dev
-```
-*Web App URL*: `http://localhost:5173`
+Visit `http://localhost:5173` to explore the application.
 
 ---
 
-## 🔐 Default Credentials & Test Accounts
+## 4. Default Seed & Test Accounts
 
-The seed script (`npm run seed` in `/server`) provisions the following verified accounts:
-
-| Role | Email Address | Password | Primary Dashboard URL |
-| :--- | :--- | :--- | :--- |
-| **Administrator** | `admin@wedding-saas.com` | `Admin123!` | [http://localhost:5173/admin/login](http://localhost:5173/admin/login) |
-| **Host (Verified)** | `qa_verified_user@example.com` | `Password123!` | [http://localhost:5173/dashboard](http://localhost:5173/dashboard) |
-| **Host (Demo)** | `test@example.com` | `Password123!` | [http://localhost:5173/dashboard](http://localhost:5173/dashboard) |
+| Account Role | Email Address | Password | Purpose |
+|---|---|---|---|
+| **System Admin** | `admin@wedding-saas.com` | `admin123` | Full access to `/admin/dashboard` & `/admin/studio` |
+| **Paid Host User** | `test@example.com` | `password123` | Access to active multi-event wedding invitation |
+| **Free Tier Host** | `free@example.com` | `password123` | Access to draft free-tier celebration invitation |
 
 ---
 
-## 🏆 What We Have Achieved
-
-### 1. 50+ Designer Templates Across 9 Occasion Categories
-- Full template library supporting:
-  - 💒 **Weddings**: Art Deco Noir, Imperial Burgundy, Botanical Romance, Phulkari Celebration, Coastal Pearl, Ivory Kayal, Marigold Courtyard, Midnight Vows.
-  - 🎂 **Birthdays**: Golden Milestone Soirée, Retro Synthwave Arcade, Enchanted Storybook Garden, Safari Little Explorer, Aged to Perfection Distillery.
-  - 💝 **Anniversaries**: 50th Golden Jubilee, Silver Jubilee Elegance, Ruby Romance 40th, Bohemian Sunset Vows, Cinematic Noir Anniversary.
-  - 👶 **Baby Showers**: Celestial Lullaby, Woodland Fable Shower, Royal Nursery Crown, Here Comes The Sun, Boho Rainbow Miracle.
-  - 🏠 **Housewarmings**: Hearth & Heritage (Griha Pravesh), Scandi Minimalist Sanctuary, Rajasthani Jharokha Griha, Urban Terrace Loft, Coastal Sea Breeze Haven.
-  - 🎉 **Parties**: Midnight Soirée, Speakeasy Roaring Twenties, Studio 54 Disco Glam, Tropical Sunset Luau, Palm Springs Poolside Bash.
-  - 🙏 **Religious Celebrations**: Divya Mandap Pooja, Shree Ganesh Sthapana, Akhand Path & Kirtan Darbar, Sacred Holy Communion, Noor-e-Mehfil Islamic Gala.
-  - 👨‍👩‍👧‍👦 **Family Celebrations**: Heritage Family Reunion, Vintage Roots Family Archive, Sunlit Picnic & Carnival, Diwali Sneh Milan, Nautical Generations Anchorage.
-  - 🎊 **Other Milestones**: Aura Grand Gala, Commencement Academic Honors, Crystal Philanthropy Ball, Executive Tech Vision Summit, Bon Voyage Wanderlust.
-
-### 2. Bespoke Entrance Gates & Interactive Reveals
-- Each category features tailored entrance gate mechanics matching the theme:
-  - Auspicious Brass Kalash & Diya glow for Indian ceremonies.
-  - 1920s Gatsby geometric ziggurats and wax seals for luxury galas.
-  - 80s arcade coin slots and neon pulses for milestone parties.
-  - Whimsical pastel clouds and storybook seals for baby showers.
-  - High-fidelity ambient audio player with custom soundtracks (`midnight-overture.mp3`, `royal-evening.wav`).
-
-### 3. Category-Adaptive Invitation Editor
-- **Dynamic Form Configuration**: Customizes form fields per occasion:
-  - *Wedding*: Groom/Bride details, couple narrative, wedding party.
-  - *Birthday*: Honoree name, age turning, milestone toast.
-  - *Baby Shower*: Expecting parents, baby name / gender, nesting story.
-  - *Housewarming*: New home address, family hosts, house blessing.
-- **Multi-Device Live Preview**:
-  - iPhone mobile mockup with interactive scrolling.
-  - 1200px scaled desktop canvas preview with real-time CSS transform matrix scaling.
-
-### 4. Simulated Payment Gateway & Public Invitation Links (`/i/:slug`)
-- **Checkout Modal**:
-  - Order review with ₹1,499 special launch discount.
-  - Simulated payment options: Credit/Debit Card (with 1-click **"Fill Demo Card"**), UPI / VPA, and Net Banking.
-  - Realistic 3-stage validation and authorization animation.
-- **Instant Activation**:
-  - Stores atomic `Payment` record in PostgreSQL (`TXN_DEMO_...`).
-  - Sets `isPublished: true` and `isLive: true`.
-  - Displays instant celebratory modal with copyable public URL.
-- **Public Guest Access**:
-  - Dedicated public viewer at `/i/:slug` accessible to any guest without logging in.
-  - Safe draft protection showing a friendly host notice if accessed before payment.
-
-### 5. Executive Dark-Luxury Admin Console (`/admin`)
-- **Overview & KPIs**: Real-time platform metrics (Users, Invitations, Published/Live counts, Active Themes, and Category breakdown progress bars).
-- **Users Management**: Full-text search, role filters, and in-place subscription tier upgrades (`free`, `pro`, `business`).
-- **Invitations Moderation**: Global celebration index with live status toggles, direct preview links, and deletion.
-- **Themes & Catalog Management**: Live theme usage counters, active/disabled toggles, JSON export, and delete protections.
-
-### 6. Dual-Mode Template Ingestion Engine
-- **Mode 1: JSON Manifest Import**:
-  - Ingest single template or bulk arrays of templates via JSON.
-  - File drag-and-drop or direct text editing with 1-click **"Load Sample Template"**.
-  - Zod schema validation with precise field-level error reporting.
-  - Automatic database upsert by slug.
-- **Mode 2: Visual Form Builder**:
-  - Graphical form for non-technical admins to create and publish new templates.
-  - Auto-slugification, archetype component mapping, and color pickers.
-- **Instant Synchronization**: Newly imported templates appear immediately in both the Admin Console and the Host Template Gallery (`/templates`).
-
----
-
-## 📦 Template Import Specification
-
-Administrators can import new themes using the following JSON schema:
-
-```json
-{
-  "name": "Royal Tuscan Vineyard",
-  "slug": "royal-tuscan-vineyard",
-  "category": "wedding",
-  "description": "Sun-drenched Chianti hills, olive branch wreaths, rustic stone villa entrance, and acoustic mandolin serenades",
-  "templateComponent": "BotanicalRomanceTemplate",
-  "tags": ["tuscan", "vineyard", "rustic", "italy", "outdoor", "luxury"],
-  "priceTier": "premium",
-  "priceAmount": 59900,
-  "currency": "INR",
-  "isActive": true,
-  "isFeatured": true,
-  "previewImageUrl": "/templates/botanical-romance-preview.jpg",
-  "defaultColors": {
-    "primary": "#556B2F",
-    "secondary": "#C2A649",
-    "accent": "#D4AF37",
-    "background": "#FBF9F5",
-    "surface": "#FFFFFF",
-    "text": "#2C2C2A"
-  },
-  "defaultFonts": {
-    "heading": "Cinzel",
-    "body": "Cormorant Garamond",
-    "accent": "Great Vibes"
-  },
-  "features": [
-    "animated_gate",
-    "audio_player",
-    "interactive_rsvp",
-    "countdown",
-    "event_schedule",
-    "photo_gallery"
-  ]
-}
-```
-
-### Supported Layout Archetypes (`templateComponent`):
-- `BotanicalRomanceTemplate`: Soft Garden, Romantic, Floral, Rustic
-- `ImperialBurgundyTemplate`: Grand Royal Palace, Traditional Heritage, Regalia
-- `ArtDecoNoirTemplate`: 1920s Gatsby, Dark Obsidian, Champagne Gold Luxury
-- `PhulkariCelebrationTemplate`: Festive Punjabi, Cross-Stitch Embroidery
-- `CoastalPearlTemplate`: Oceanic Waves, Shell Fans, Minimalist Destination
-- `CelestialLullabyTemplate`: Pastel Clouds, Crescent Moon, Whimsical Baby Shower
-- `HearthHeritageTemplate`: Terracotta, Griha Pravesh, Auspicious Indian Warmth
-- `MidnightSoireeTemplate`: Neon Cyber, Disco Glam, Cocktail Parties
-- `AuraGrandGalaTemplate`: Black-Tie, Sapphire Starlight, Red Carpet Honors
-
----
-
-## 🗺 Roadmap & What is Still Pending
-
-The following high-value capabilities are recommended for subsequent phases:
-
-1. **Live Production Payment Gateways**:
-   - Integrate live Stripe Elements & Razorpay Checkout SDKs with webhook listeners for automated charge capture and refund processing.
-2. **WhatsApp Business Cloud API Integration**:
-   - Automated delivery of personalized guest invitations with interactive RSVP buttons directly inside WhatsApp.
-3. **Cloud Media Storage (S3 / Cloudinary)**:
-   - Offload user-uploaded photos and audio from local disk storage (`/uploads`) to AWS S3 or Cloudinary with automated thumbnail generation.
-4. **Custom Domain / CNAME Routing**:
-   - Allow premium users to bind custom root domains (e.g., `rahulandpriya.com`) using automated Cloudflare or Caddy SSL certificate provisioning.
-5. **Guest Management & Export Suite**:
-   - CSV / Excel import and export for guest lists and RSVP responses with dietary restriction aggregation.
-6. **QR Code Check-In Scanner**:
-   - Generate unique QR codes per guest for on-site venue check-in verification using the host's mobile camera.
-
----
-
-## 📁 Repository Structure
-
-```
-├── server/                    # Node.js + Express + Prisma Backend
-│   ├── prisma/
-│   │   ├── schema.prisma      # PostgreSQL Database Schema
-│   │   └── seed.ts            # Seed Script (50+ Themes, Users, Celebrations)
-│   ├── src/
-│   │   ├── index.ts           # Express Application Entrypoint
-│   │   ├── middleware/        # Auth & Role-Based Access Control Middlewares
-│   │   ├── routes/
-│   │   │   ├── admin.ts       # Admin Console & Template Import Endpoints
-│   │   │   ├── auth.ts        # Authentication & Profile Endpoints
-│   │   │   ├── invitations.ts # Host Invitation & Payment Checkout Endpoints
-│   │   │   └── publicInvitations.ts # Public Guest Viewer & Theme Catalog Endpoints
-│   │   └── lib/               # Prisma Client & JWT Utilities
-│   └── .env.example           # Backend Environment Template
-│
-├── web/                       # React 18 + Vite 5 + Tailwind Frontend
-│   ├── src/
-│   │   ├── components/        # Modals, Mockups, and Route Guards
-│   │   │   ├── AdminProtectedRoute.tsx
-│   │   │   ├── PaymentModal.tsx
-│   │   │   ├── MobilePhoneMockup.tsx
-│   │   │   └── admin/TemplateImportModal.tsx
-│   │   ├── contexts/          # Auth Context Provider
-│   │   ├── pages/             # App Pages (Dashboard, Editor, Admin, Gallery)
-│   │   │   ├── admin/Dashboard.tsx
-│   │   │   ├── admin/Login.tsx
-│   │   │   ├── CreateInvitation.tsx
-│   │   │   ├── Dashboard.tsx
-│   │   │   ├── InvitationEditor.tsx
-│   │   │   ├── PublicInvitationView.tsx
-│   │   │   └── TemplateGallery.tsx
-│   │   └── templates/         # Interactive Template Components & Registry
-│   │       ├── registry.ts    # Component Resolver & Dynamic Archetype Engine
-│   │       └── [theme-dirs]/  # Component Layouts, Audio Assets & Styles
-│   └── .env.example           # Frontend Environment Template
-│
-└── README.md                  # Master System Documentation
-```
-
----
-
-## 📄 License
-Proprietary & Confidential. All rights reserved by the development team.
+© 2026 InviteHub. All rights reserved.
